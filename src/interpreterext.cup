@@ -31,7 +31,7 @@ parser code {:
 
 terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, LPAREN, RPAREN;
 terminal IF, THEN, ELSE, FI, WHILE, DO, OD, REPEAT, UNTIL;
-terminal DEFINE, PROC, END,RETURN;
+terminal DEFINE, PROC, END, RETURN;
 terminal Integer NUMBER;
 terminal COMMA;
 terminal String ID;
