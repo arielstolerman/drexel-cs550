@@ -29,8 +29,9 @@ parser code {:
 	}
 :}
 
-terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, LPAREN, RPAREN;
+terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, LPAREN, RPAREN, LBRACKET, RBRACKET;
 terminal IF, THEN, ELSE, FI, WHILE, DO, OD, REPEAT, UNTIL;
+terminal CONS, CAR, CDR, NULLP, INTP, LISTP;
 terminal DEFINE, PROC, END, RETURN;
 terminal Integer NUMBER;
 terminal COMMA;
