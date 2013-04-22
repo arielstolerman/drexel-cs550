@@ -29,20 +29,24 @@ parser code {:
 	}
 :}
 
-terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, LPAREN, RPAREN, LBRACKET, RBRACKET;
+terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, LPAREN, RPAREN;
 terminal IF, THEN, ELSE, FI, WHILE, DO, OD, REPEAT, UNTIL;
-terminal CONS, CAR, CDR, NULLP, INTP, LISTP;
 terminal DEFINE, PROC, END, RETURN;
 terminal Integer NUMBER;
 terminal COMMA;
 terminal String ID;
+/* list terminals */
+terminal LBRACKET, RBRACKET, CONCAT;
+terminal CONS, CAR, CDR, NULLP, INTP, LISTP;
 
 non terminal Program program;
 non terminal StatementList statement_list;
 non terminal ParamList param_list;
 non terminal ExpressionList expr_list;
 non terminal Statement statement, assign_statement, if_statement, while_statement, repeat_statement, define_statement, return_statement;
-non terminal Expr expr, term, factor, funcall;
+non terminal Expr expr;
+non terminal NumExpr num_expr, term, factor, funcall;
+non terminal ListExpr list_expr;
 
 program ::= statement_list:list
 	    {: Program program = new Program(list);
@@ -123,4 +127,6 @@ expr_list ::= expr:ex COMMA expr_list:el
             {: RESULT = new ExpressionList(ex,el); :}
             | expr:ex 
             {: RESULT = new ExpressionList(ex);   :};
-            
+
+/* list grammar rules */
+
