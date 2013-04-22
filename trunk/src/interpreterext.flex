@@ -43,6 +43,7 @@ import java_cup.runtime.Symbol;
  */
 "[" {return new Symbol(sym.LBRACKET); }
 "]" {return new Symbol(sym.RBRACKET); }
+"\|\|" {return new Symbol(sym.CONCAT); }
 "cons" {return new Symbol{sym.CONS); }
 "car" {return new Symbol{sym.CAR); }
 "cdr" {return new Symbol{sym.CDR); }
