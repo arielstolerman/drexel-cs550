@@ -3,6 +3,11 @@
  * Modified by Mike Kopack for CS550, 2009 Spring Qtr.
  * Should be at the same level of completeness as the Lecture 2c
  * C++ version.
+ *
+ * --------------------------------------------------------
+ *
+ * Group 1 Extension:
+ * added support for lists of integers and other such lists
  */
 
 import java_cup.runtime.Symbol;
@@ -33,4 +38,18 @@ import java_cup.runtime.Symbol;
 [0-9]+ {return new Symbol(sym.NUMBER, new Integer(yytext())); }
 [a-z,A-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
 [ \t\r\n\f] {/* ignore white space */}
+/*
+ * define list tokens
+ */
+"[" {return new Symbol(sym.LBRACKET); }
+"]" {return new Symbol(sym.RBRACKET); }
+"cons" {return new Symbol{sym.CONS); }
+"car" {return new Symbol{sym.CAR); }
+"cdr" {return new Symbol{sym.CDR); }
+"nullp" {return new Symbol{sym.NULLP); }
+"intp" {return new Symbol{sym.INTP); }
+"listp" {return new Symbol{sym.LISTP); }
+/*
+ * error handling
+ */
 . {System.err.println("Illegal character: "+yytext());}
