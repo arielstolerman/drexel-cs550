@@ -7,8 +7,6 @@
  * C++ version.
  */
 
-package part1_alternative;
-
 import java.util.*;
 
 /**
@@ -551,11 +549,11 @@ class Proc {
 	}
 }
 
-class Program {
+class Part1 {
 
 	private StatementList stmtlist;
 
-	public Program(StatementList list) {
+	public Part1(StatementList list) {
 		stmtlist = list;
 	}
 

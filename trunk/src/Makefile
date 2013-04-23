@@ -8,16 +8,16 @@ VIEWER=more
 
 ### part 1 ####
 
-run-part1 : Yylex.class parser.class sym.class ExtendPart1.class
+run-part1 : Yylex.class parser.class sym.class Part1.class
 	@java -classpath ".;../lib/java-cup-11a.jar" parser
 
-Yylex.class parser.class sym.class ExtendPart1.class : Yylex.java parser.java sym.java ExtendPart1.java
-	@javac -classpath ../lib/java-cup-11a.jar Yylex.java parser.java sym.java ExtendPart1.java
+Yylex.class parser.class sym.class Part1.class : Yylex.java parser.java sym.java Part1.java
+	@javac -classpath ../lib/java-cup-11a.jar Yylex.java parser.java sym.java Part1.java
 
 Yylex.java : interpreterext.flex
 	@java -jar ../lib/jflex.jar interpreterext.flex
 
-parser.java sym.java : interpreterext.cup
+parser.java sym.java : interpreterext1.cup
 	@java -jar ../lib/java-cup-11a.jar interpreterext1.cup
 
 clean :
