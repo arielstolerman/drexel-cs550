@@ -51,8 +51,8 @@ non terminal StatementList statement_list;
 non terminal ParamList param_list;
 non terminal ExpressionList expr_list;
 non terminal Statement statement, assign_statement, if_statement, while_statement, repeat_statement, define_statement, return_statement;
-non terminal Expr element, expr, term, factor, funcall;
-non terminal Lst list;
+non terminal Expr element, expr, list, term, factor, funcall;
+/* non terminal Lst list; */
 
 /* program */
 program ::=

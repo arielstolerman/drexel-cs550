@@ -188,9 +188,9 @@ class FunctionCall extends Expr {
 class Cons extends Expr {
 	
 	private Expr exp;
-	private Lst list;
+	private Expr list;
 	
-	public Cons(Expr exp, Lst list) {
+	public Cons(Expr exp, Expr list) {
 		this.exp = exp;
 		this.list = list;
 	}
@@ -212,9 +212,9 @@ class Cons extends Expr {
 
 class Car extends Expr {
 	
-	private Lst list;
+	private Expr list;
 	
-	public Car(Lst list) {
+	public Car(Expr list) {
 		this.list = list;
 	}
 	
@@ -227,9 +227,9 @@ class Car extends Expr {
 
 class Cdr extends Expr {
 	
-	private Lst list;
+	private Expr list;
 	
-	public Cdr(Lst list) {
+	public Cdr(Expr list) {
 		this.list = list;
 	}
 	
@@ -238,16 +238,16 @@ class Cdr extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		List<Element> listEval = list.eval(nametable, functiontable, var).getList();
 		LinkedList<Element> res = new LinkedList<>();
-		res.addAll(1,listEval);
+		res.addAll(listEval.subList(1,listEval.size()));
 		return new Element(res);
 	}
 }
 
 class NullP extends Expr {
 	
-	private Lst list;
+	private Expr list;
 	
-	public NullP(Lst list) {
+	public NullP(Expr list) {
 		this.list = list;
 	}
 	
