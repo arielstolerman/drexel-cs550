@@ -30,7 +30,7 @@ class Element {
 		isList = true;
 	}
 	
-	public boolean isValue() {
+	public boolean isInt() {
 		return !isList;
 	}
 	
@@ -38,7 +38,7 @@ class Element {
 		return isList;
 	}
 	
-	public Integer getValue() {
+	public Integer getInt() {
 		if (isList)
 			return null;
 		return value;
@@ -132,8 +132,8 @@ class Times extends Expr {
 
 	public Element eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) {
 		return new Element(
-				expr1.eval(nametable, functiontable, var).getValue() *
-				expr2.eval(nametable, functiontable, var).getValue());
+				expr1.eval(nametable, functiontable, var).getInt() *
+				expr2.eval(nametable, functiontable, var).getInt());
 	}
 }
 
@@ -148,8 +148,8 @@ class Plus extends Expr {
 
 	public Element eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) {
 		return new Element(
-				expr1.eval(nametable, functiontable, var).getValue() +
-				expr2.eval(nametable, functiontable, var).getValue());
+				expr1.eval(nametable, functiontable, var).getInt() +
+				expr2.eval(nametable, functiontable, var).getInt());
 	}
 }
 
@@ -164,8 +164,8 @@ class Minus extends Expr {
 
 	public Element eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) {
 		return new Element(
-				expr1.eval(nametable, functiontable, var).getValue() -
-				expr2.eval(nametable, functiontable, var).getValue());
+				expr1.eval(nametable, functiontable, var).getInt() -
+				expr2.eval(nametable, functiontable, var).getInt());
 	}
 }
 
@@ -270,7 +270,7 @@ class IntP extends Expr {
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return exp.eval(nametable, functiontable, var).isValue() ?
+		return exp.eval(nametable, functiontable, var).isInt() ?
 				new Element(1) : new Element(0);
 	}
 }
@@ -373,7 +373,7 @@ class IfStatement extends Statement {
 	}
 
 	public void eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) throws ReturnValue {
-		if (expr.eval(nametable, functiontable, var).getValue() > 0) {
+		if (expr.eval(nametable, functiontable, var).getInt() > 0) {
 			stmtlist1.eval(nametable, functiontable, var);
 		} else {
 			stmtlist2.eval(nametable, functiontable, var);
@@ -392,7 +392,7 @@ class WhileStatement extends Statement {
 	}
 
 	public void eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) throws ReturnValue {
-		while (expr.eval(nametable, functiontable, var).getValue() > 0) {
+		while (expr.eval(nametable, functiontable, var).getInt() > 0) {
 			stmtlist.eval(nametable, functiontable, var);
 		}
 	}
@@ -411,7 +411,7 @@ class RepeatStatement extends Statement {
 	public void eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) throws ReturnValue {
 		do {
 			sl.eval(nametable, functiontable, var);
-		} while (expr.eval(nametable, functiontable, var).getValue() > 0);
+		} while (expr.eval(nametable, functiontable, var).getInt() > 0);
 
 	}
 }

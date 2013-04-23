@@ -23,9 +23,9 @@ import java_cup.runtime.Symbol;
 "define" {return new Symbol(sym.DEFINE); }
 "(" {return new Symbol(sym.LPAREN); }
 ")" {return new Symbol(sym.RPAREN); }
-"\[" {return new Symbol(sym.LBRACKET); }
-"\]" {return new Symbol(sym.RBRACKET); }
-"\|\|" {return new Symbol(sym.CONCAT); }
+"[" {return new Symbol(sym.LBRACKET); }
+"]" {return new Symbol(sym.RBRACKET); }
+"||" {return new Symbol(sym.CONCAT); }
 "cons" {return new Symbol(sym.CONS); }
 "car" {return new Symbol(sym.CAR); }
 "cdr" {return new Symbol(sym.CDR); }
