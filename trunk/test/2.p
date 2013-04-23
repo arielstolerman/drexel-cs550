@@ -5,4 +5,4 @@ while i do
   s := x ;
   x := x + 1;
   i := i - 1 
-done
+od
