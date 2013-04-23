@@ -549,11 +549,11 @@ class Proc {
 	}
 }
 
-class Part1 {
+class Program {
 
 	private StatementList stmtlist;
 
-	public Part1(StatementList list) {
+	public Program(StatementList list) {
 		stmtlist = list;
 	}
 
@@ -580,3 +580,5 @@ class Part1 {
 		}
 	}
 }
+
+class Part1 {}
