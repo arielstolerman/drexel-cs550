@@ -47,10 +47,13 @@ class ListExpr extends Expr {
 	
 	private List<Expr> list;
 	
-	public ListExpr() {} // should never be used
+	public ListExpr() {
+		// empty list
+		list = new LinkedList<>();
+	}
 	
-	public ListExpr(List<Expr> list) {
-		this.list = list;
+	public ListExpr(ExpressionList el) {
+		this.list = el.getExpressions();
 	}
 	
 	public List<Object> eval(HashMap<String, Object> nametable, HashMap<String, Proc> functiontable, LinkedList var){
@@ -255,8 +258,8 @@ class NullP extends NumExpr {
 	@Override
 	public Integer eval(HashMap<String, Object> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		// TODO Auto-generated method stub
-		return super.eval(nametable, functiontable, var);
+		// TODO currently returns whether the list is empty; should return something else?
+		return list.eval(nametable, functiontable, var).size() == 0 ? 1 : 0;
 	}
 }
 
@@ -480,7 +483,7 @@ class ExpressionList {
 
 	public ExpressionList(Expr ex, ExpressionList el) {
 		list = new LinkedList<Expr>();
-		//we need ot add the expression to the front of the list
+		//we need to add the expression to the front of the list
 		list.add(0, ex);
 
 	}
