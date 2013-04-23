@@ -12,6 +12,7 @@
 
 import java_cup.runtime.*;
 import java.util.*;
+import java.io.*;
 
 action code {:
 	/* code inserted into CUP$actions class
@@ -30,7 +31,10 @@ parser code {:
 
 	/* this part is included in the parser class */
 	public static void main (String args[]) throws Exception{
-		new parser(new Yylex(System.in)).parse();
+		InputStream is = System.in;
+		if (args.length == 2 && args[0].equals("-i"))
+			is = new FileInputStream(new File(args[1]));
+		new parser(new Yylex(is)).parse();
 	}
 :}
 
