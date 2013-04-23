@@ -23,6 +23,15 @@ import java_cup.runtime.Symbol;
 "define" {return new Symbol(sym.DEFINE); }
 "(" {return new Symbol(sym.LPAREN); }
 ")" {return new Symbol(sym.RPAREN); }
+"\[" {return new Symbol(sym.LBRACKET); }
+"\]" {return new Symbol(sym.RBRACKET); }
+"\|\|" {return new Symbol(sym.CONCAT); }
+"cons" {return new Symbol(sym.CONS); }
+"car" {return new Symbol(sym.CAR); }
+"cdr" {return new Symbol(sym.CDR); }
+"nullp" {return new Symbol(sym.NULLP); }
+"intp" {return new Symbol(sym.INTP); }
+"listp" {return new Symbol(sym.LISTP); }
 "if" {return new Symbol(sym.IF); }
 "then" {return new Symbol(sym.THEN); }
 "else" {return new Symbol(sym.ELSE); }
@@ -38,18 +47,6 @@ import java_cup.runtime.Symbol;
 [0-9]+ {return new Symbol(sym.NUMBER, new Integer(yytext())); }
 [a-z,A-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
 [ \t\r\n\f] {/* ignore white space */}
-/*
- * define list tokens
- */
-"[" {return new Symbol(sym.LBRACKET); }
-"]" {return new Symbol(sym.RBRACKET); }
-"\|\|" {return new Symbol(sym.CONCAT); }
-"cons" {return new Symbol{sym.CONS); }
-"car" {return new Symbol{sym.CAR); }
-"cdr" {return new Symbol{sym.CDR); }
-"nullp" {return new Symbol{sym.NULLP); }
-"intp" {return new Symbol{sym.INTP); }
-"listp" {return new Symbol{sym.LISTP); }
 /*
  * error handling
  */
