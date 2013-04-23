@@ -1,3 +1,4 @@
+package part1;
 /* this is the cup file for the mini language
  * at http://www.cs.drexel.edu/~jjohnson/2010-11/spring/cs550/lectures/lec2c.html *
  * created by Xu, 2/5/07
@@ -606,5 +607,3 @@ class Program {
 		}
 	}
 }
-
-public class ExtendPart1 {}
