@@ -448,9 +448,8 @@ class ExpressionList {
 
 	public ExpressionList(Expr ex, ExpressionList el) {
 		list = new LinkedList<Expr>();
-		//we need ot add the expression to the front of the list
-		list.add(0, ex);
-
+		list.add(ex);
+		list.addAll(el.getExpressions());
 	}
 
 	public List<Expr> getExpressions() {
