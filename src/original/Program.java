@@ -7,6 +7,8 @@
  * C++ version.
  */
 
+package original;
+
 import java.util.*;
 
 class Expr {
