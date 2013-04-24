@@ -1,7 +1,7 @@
 define listlen
 proc(l)
 	if intp(l) then
-		return -1
+		return 0
 	else
 		cond := 1;
 		n := 0;
@@ -12,9 +12,12 @@ proc(l)
 				n := n + 1;
 				l := cdr(l)
 			fi
-		od;
-		return n
+		od
+	fi;
+	return n
 end;
 
-x := listlen([1,2,3]);
-y := listlen([]);
+l := listlen([1,2,3]);
+m := listlen([1,[2,3,4],5]);
+n := listlen([]);
+o := listlen(666)
