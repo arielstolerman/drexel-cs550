@@ -78,7 +78,6 @@ statement ::=
 	assign_statement:a
 	{:
 		RESULT = a;
-		System.out.println(RESULT);
 	:} |
 	define_statement:d
 	{:
