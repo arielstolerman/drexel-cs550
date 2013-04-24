@@ -34,6 +34,14 @@ class Elem {
 		this.heap = heap;
 	}
 	
+	/**
+	 * Constructor for numeric elements used by the program, but are NOT stored
+	 * on the heap.
+	 */
+	public Elem(int value) {
+		this(value,false,Heap.NULL,null);
+	}
+	
 	// queries
 	
 	/**
@@ -56,6 +64,47 @@ class Elem {
 	 */
 	public boolean isMarked() {
 		return marked;
+	}
+	
+	/**
+	 * Returns true iff this element has a next element (i.e. its cdr is not
+	 * NULL).
+	 */
+	public boolean hasNext() {
+		return nextIndex != Heap.NULL;
+	}
+	
+	// getters
+	
+	/**
+	 * Returns the integer value if this element is not a list, otherwise
+	 * returns null.
+	 */
+	public Integer getValue() {
+		if (!isList)
+			return value;
+		else
+			return null;
+	}
+	
+	/**
+	 * Returns the index value if this element IS a list, otherwise
+	 * returns null.
+	 */
+	public Integer getListIndex() {
+		if (isList)
+			return value;
+		else
+			return null;
+	}
+	
+	/**
+	 * Returns the next element, or NULL if none exists.
+	 */
+	public Elem getNext() {
+		if (nextIndex == Heap.NULL)
+			return null;
+		return heap.elemAt(nextIndex);
 	}
 	
 	// setters
@@ -137,7 +186,7 @@ public class Heap {
 	 * Runs the mark-and-sweep garbage collector and updates the avail pointer
 	 * and available heap size accordingly. 
 	 */
-	private void gc(HashMap<String,Element> nametable) {
+	private void gc(HashMap<String,Elem> nametable) {
 		mark(nametable);
 		sweep();
 		clearMarks();
@@ -146,10 +195,10 @@ public class Heap {
 	/**
 	 * Marks all currently pointed elements in the heap recursively.
 	 */
-	private void mark(HashMap<String,Element> nametable) {
-		for (Element e: nametable.values()) {
+	private void mark(HashMap<String,Elem> nametable) {
+		for (Elem e: nametable.values()) {
 			if (e.isList())
-				data[e.getValue()].mark(); // TODO Element should have getValue() which returns the index 
+				data[e.getValue()].mark(); // TODO Elem should have getValue() which returns the index 
 		}
 	}
 	
@@ -183,7 +232,17 @@ public class Heap {
 			elem.unmark();
 	}
 	
-	public Elem cons(HashMap<String,Element> nametable) {
+	/**
+	 * Cons the car and the cdr fields. Assumes that the cdr fields were already
+	 * allocated using cons. For the car field, however, allocates a new cell on
+	 * the heap and connects it to point cdr.
+	 * If cdr is NULL, allocates car with its next pointer as NULL.
+	 * @param car
+	 * @param cdr
+	 * @param nametable
+	 * @return
+	 */
+	public Elem cons(Elem car, Elem cdr, HashMap<String,Elem> nametable) {
 		// TODO
 		return null;
 	}
@@ -200,5 +259,16 @@ public class Heap {
 	
 	public Elem elemAt(int index) {
 		return data[index];
+	}
+	
+	/**
+	 * @param index desired list start index.
+	 * @return the list that starts at the given index, or NULL if none exists.
+	 */
+	public Elem getListAt(int index) {
+		Elem e;
+		if (!(e = data[index]).isList())
+			return null;
+		return e;
 	}
 }
