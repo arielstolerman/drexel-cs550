@@ -235,13 +235,13 @@ funcall ::=
 	:};
 
 expr_list ::=
-	expr:ex COMMA expr_list:el
+	element:e COMMA expr_list:el
 	{:
-		RESULT = new ExpressionList(ex,el);
+		RESULT = new ExpressionList(e,el);
 	:} |
-	expr:ex 
+	element:e
 	{:
-		RESULT = new ExpressionList(ex);
+		RESULT = new ExpressionList(e);
 	:};
 
 list ::=
