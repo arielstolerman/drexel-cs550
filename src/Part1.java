@@ -264,8 +264,6 @@ class Concat extends Expr {
 
 class Cons extends Expr {
 	
-	// TODO parsing CONS with variables still broken
-	
 	private Expr exp;
 	private Expr list;
 
