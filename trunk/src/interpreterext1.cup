@@ -86,6 +86,7 @@ statement ::=
 	assign_statement:a
 	{:
 		RESULT = a;
+		System.out.println(RESULT);
 	:} |
 	define_statement:d
 	{:
@@ -160,31 +161,37 @@ expr ::=
 	expr:e PLUS term:t
 	{:
 		RESULT = new Plus(e,t);
+		System.out.println(RESULT);
 	:} |
 	expr:e MINUS term:t
 	{:
 		RESULT = new Minus(e,t);
+		System.out.println(RESULT);
 	:} |
 	list:l1 CONCAT list:l2
 	{:
 		System.out.println("expr->concat");
 		RESULT = new Concat(l1,l2);
+		System.out.println(RESULT);
 	:} |
 	term:t
 	{:
 		System.out.println("expr->term");
 		RESULT = t;
+		System.out.println(RESULT);
 	:};
 
 term ::=
 	term:t TIMES factor:f
 	{:
 		RESULT = new Times(t,f);
+		System.out.println(RESULT);
 	:} |
 	factor:f
 	{:
 		System.out.println("term->factor");
 		RESULT = f;
+		System.out.println(RESULT);
 	:};
 
 factor ::=
@@ -192,56 +199,67 @@ factor ::=
 	{:
 		System.out.println("factor->( expr )");
 		RESULT = e;
+		System.out.println(RESULT);
 	:} |
 	NUMBER:n
 	{:
 		System.out.println("factor->number");
 		RESULT = new Number(n);
+		System.out.println(RESULT);
 	:} |
 	ID:i
 	{:
 		System.out.println("factor->id");
 		RESULT = new Ident(i);
+		System.out.println(RESULT);
 	:} |
 	funcall:fc
 	{:
 		System.out.println("factor->funcall");
 		RESULT = fc;
+		System.out.println(RESULT);
 	:} |
 	CONS LPAREN expr:e COMMA list:l RPAREN
 	{:
 		System.out.println("factor->cons");
 		RESULT = new Cons(e,l);
+		System.out.println(RESULT);
 	:} |
 	CAR LPAREN list:l RPAREN
 	{:
 		System.out.println("factor->car");
 		RESULT = new Car(l);
+		System.out.println(RESULT);
 	:} |
 	CDR LPAREN list:l RPAREN
 	{:
 		System.out.println("factor->cdr");
 		RESULT = new Cdr(l);
+		System.out.println(RESULT);
 	:} |
 	NULLP LPAREN list:l RPAREN
 	{:
 		System.out.println("factor->nullp");
 		RESULT = new NullP(l);
+		System.out.println(RESULT);
 	:} |
 	INTP LPAREN expr:e RPAREN
 	{:
 		System.out.println("factor->intp");
 		RESULT = new IntP(e);
+		System.out.println(RESULT);
 	:} |
 	LISTP LPAREN expr:e RPAREN
 	{:
 		System.out.println("factor->listp");
 		RESULT = new ListP(e);
+		System.out.println(RESULT);
 	:} |
 	list:l
 	{:
 		System.out.println("factor->list");
 		RESULT = l;
+		System.out.println(RESULT);
 	:};
 
 funcall ::=
@@ -249,6 +267,7 @@ funcall ::=
 	{:
 		System.out.println("funcall-> id ( expr_list )");
 		RESULT = new FunctionCall(i,el);
+		System.out.println(RESULT);
 	:};
 
 list ::=
@@ -256,11 +275,13 @@ list ::=
 	{:
 		System.out.println("list-> [ expr_list ]");
 		RESULT = new Lst(el);
+		System.out.println(RESULT);
 	:} |
 	LBRACKET RBRACKET
 	{:
 		System.out.println("list -> [ ]");
 		RESULT = new Lst();
+		System.out.println(RESULT);
 	:};
 
 expr_list ::=
@@ -268,10 +289,12 @@ expr_list ::=
 	{:
 		System.out.println("expr_list -> expr , expr_list");
 		RESULT = new ExpressionList(ex,el);
+		System.out.println(RESULT);
 	:} |
 	expr:ex
 	{:
 		System.out.println("expr_list -> expr");
 		RESULT = new ExpressionList(ex);
+		System.out.println(RESULT);
 	:};
 
