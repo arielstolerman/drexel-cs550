@@ -98,6 +98,11 @@ class Lst extends Expr {
 	public List<Expr> getList() {
 		return list;
 	}
+	
+	@Override
+	public String toString() {
+		return list.toString();
+	}
 }
 
 class Ident extends Expr {
@@ -111,6 +116,11 @@ class Ident extends Expr {
 	public Element eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return nametable.get(name);
+	}
+	
+	@Override
+	public String toString() {
+		return name;
 	}
 }
 
@@ -130,6 +140,11 @@ class Number extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return new Element(value);
 	}
+	
+	@Override
+	public String toString() {
+		return value + "";
+	}
 }
 
 class Times extends Expr {
@@ -145,6 +160,11 @@ class Times extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return new Element(expr1.eval(nametable, functiontable, var).getInt()
 				* expr2.eval(nametable, functiontable, var).getInt());
+	}
+	
+	@Override
+	public String toString() {
+		return expr1 + " TIMES " + expr2;
 	}
 }
 
@@ -162,6 +182,11 @@ class Plus extends Expr {
 		return new Element(expr1.eval(nametable, functiontable, var).getInt()
 				+ expr2.eval(nametable, functiontable, var).getInt());
 	}
+	
+	@Override
+	public String toString() {
+		return expr1 + " PLUS " + expr2;
+	}
 }
 
 class Minus extends Expr {
@@ -177,6 +202,11 @@ class Minus extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return new Element(expr1.eval(nametable, functiontable, var).getInt()
 				- expr2.eval(nametable, functiontable, var).getInt());
+	}
+	
+	@Override
+	public String toString() {
+		return expr1 + " MINUS " + expr2;
 	}
 }
 
@@ -196,6 +226,13 @@ class FunctionCall extends Expr {
 		return functiontable.get(funcid).apply(nametable, functiontable, var,
 				explist);
 	}
+	
+	@Override
+	public String toString() {
+		return "FUNCALL: " + funcid + " " +
+				explist.getExpressions().toString()
+				.replace("[","( ").replace("]"," )");
+	}
 }
 
 class Concat extends Expr {
@@ -211,11 +248,15 @@ class Concat extends Expr {
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		// TODO Auto-generated method stub
 		List<Element> res = new LinkedList<>();
 		res.addAll(list1.eval(nametable, functiontable, var).getList());
 		res.addAll(list2.eval(nametable, functiontable, var).getList());
 		return new Element(res);
+	}
+	
+	@Override
+	public String toString() {
+		return list1 + " || " + list2;
 	}
 }
 
@@ -239,6 +280,11 @@ class Cons extends Expr {
 		res.addAll(listElem.getList());
 		return new Element(res);
 	}
+	
+	@Override
+	public String toString() {
+		return "CONS ( " + exp + ", " + list + " )";
+	}
 }
 
 class Car extends Expr {
@@ -253,6 +299,11 @@ class Car extends Expr {
 	public Element eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return list.eval(nametable, functiontable, var).getList().get(0);
+	}
+	
+	@Override
+	public String toString() {
+		return "CAR ( " + list + " )";
 	}
 }
 
@@ -273,6 +324,11 @@ class Cdr extends Expr {
 		res.addAll(listEval.subList(1, listEval.size()));
 		return new Element(res);
 	}
+	
+	@Override
+	public String toString() {
+		return "CDR ( " + list + " )";
+	}
 }
 
 class NullP extends Expr {
@@ -288,6 +344,11 @@ class NullP extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return list.eval(nametable, functiontable, var).getList().isEmpty() ?
 				new Element(1) : new Element(0);
+	}
+	
+	@Override
+	public String toString() {
+		return "NULLP ( " + list + " )";
 	}
 }
 
@@ -305,6 +366,11 @@ class IntP extends Expr {
 		return exp.eval(nametable, functiontable, var).isInt() ? new Element(1)
 				: new Element(0);
 	}
+	
+	@Override
+	public String toString() {
+		return "INTP ( " + exp + " )";
+	}
 }
 
 class ListP extends Expr {
@@ -320,6 +386,11 @@ class ListP extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return exp.eval(nametable, functiontable, var).isList() ? new Element(1)
 				: new Element(0);
+	}
+	
+	@Override
+	public String toString() {
+		return "LISTP ( " + exp + " )";
 	}
 }
 
@@ -393,6 +464,11 @@ class AssignStatement extends Statement {
 			// evaluated result (which must be an integer
 		}
 		nametable.put(name, expr.eval(nametable, functiontable, var));
+	}
+	
+	@Override
+	public String toString() {
+		return name + " := " + expr;
 	}
 }
 
@@ -500,6 +576,11 @@ class ExpressionList {
 
 	public List<Expr> getExpressions() {
 		return list;
+	}
+	
+	@Override
+	public String toString() {
+		return list.toString();
 	}
 }
 
