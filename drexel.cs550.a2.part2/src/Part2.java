@@ -9,57 +9,9 @@
 
 import java.util.*;
 
-/**
- * Generic element that can be either an integer or a list of elements.
- */
-class Element {
-
-	private Integer value;
-	private List<Element> list;
-	private boolean isList;
-
-	public Element(Integer value) {
-		this.value = value;
-		isList = false;
-	}
-
-	public Element(List<Element> list) {
-		this.list = list;
-		isList = true;
-	}
-
-	public boolean isInt() {
-		return !isList;
-	}
-
-	public boolean isList() {
-		return isList;
-	}
-
-	public Integer getInt() {
-		if (isList)
-			return null;
-		return value;
-	}
-
-	public List<Element> getList() {
-		if (!isList)
-			return null;
-		return list;
-	}
-
-	@Override
-	public String toString() {
-		if (isList)
-			return list.toString();
-		else
-			return value.toString();
-	}
-}
-
 abstract class Expr {
 
-	public abstract Element eval(HashMap<String, Element> nametable,
+	public abstract Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var);
 	
 	@Override
@@ -90,12 +42,9 @@ class Lst extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		LinkedList<Element> res = new LinkedList<>();
-		for (Expr e : list)
-			res.add(e.eval(nametable, functiontable, var));
-		return new Element(res);
+		return buildList(list, nametable, functiontable, var);
 	}
 
 	public List<Expr> getList() {
@@ -105,6 +54,20 @@ class Lst extends Expr {
 	@Override
 	public String toString() {
 		return list.toString();
+	}
+	
+	/**
+	 * Recursively builds the list of elements using dynamic memory allocation
+	 * on the heap. If the list of expression is empty, returns null.
+	 */
+	public Elem buildList(List<Expr> list, HashMap<String, Elem> nametable,
+			HashMap<String, Proc> functiontable, LinkedList var) {
+		if (list.size() == 0)
+			return null;
+		Elem car = list.get(0).eval(nametable, functiontable, var);
+		Elem cdr = list.size() == 1 ? null :
+			buildList(list.subList(1, list.size()), nametable, functiontable, var);
+		return Program.HEAP.cons(car, cdr, nametable);
 	}
 }
 
@@ -116,7 +79,7 @@ class Ident extends Expr {
 		name = s;
 	}
 
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return nametable.get(name);
 	}
@@ -139,9 +102,9 @@ class Number extends Expr {
 		value = n;
 	}
 
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return new Element(value);
+		return new Elem(value);
 	}
 	
 	@Override
@@ -159,10 +122,10 @@ class Times extends Expr {
 		expr2 = op2;
 	}
 
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return new Element(expr1.eval(nametable, functiontable, var).getInt()
-				* expr2.eval(nametable, functiontable, var).getInt());
+		return new Elem(expr1.eval(nametable, functiontable, var).getValue()
+				* expr2.eval(nametable, functiontable, var).getValue());
 	}
 	
 	@Override
@@ -180,10 +143,10 @@ class Plus extends Expr {
 		expr2 = op2;
 	}
 
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return new Element(expr1.eval(nametable, functiontable, var).getInt()
-				+ expr2.eval(nametable, functiontable, var).getInt());
+		return new Elem(expr1.eval(nametable, functiontable, var).getValue()
+				+ expr2.eval(nametable, functiontable, var).getValue());
 	}
 	
 	@Override
@@ -201,10 +164,10 @@ class Minus extends Expr {
 		expr2 = op2;
 	}
 
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return new Element(expr1.eval(nametable, functiontable, var).getInt()
-				- expr2.eval(nametable, functiontable, var).getInt());
+		return new Elem(expr1.eval(nametable, functiontable, var).getValue()
+				- expr2.eval(nametable, functiontable, var).getValue());
 	}
 	
 	@Override
@@ -224,7 +187,7 @@ class FunctionCall extends Expr {
 		explist = el;
 	}
 
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return functiontable.get(funcid).apply(nametable, functiontable, var,
 				explist);
@@ -248,12 +211,12 @@ class Concat extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		List<Element> res = new LinkedList<>();
+		List<Elem> res = new LinkedList<>();
 		res.addAll(list1.eval(nametable, functiontable, var).getList());
 		res.addAll(list2.eval(nametable, functiontable, var).getList());
-		return new Element(res);
+		return new Elem(res);
 	}
 	
 	@Override
@@ -273,14 +236,14 @@ class Cons extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		Element expElem = exp.eval(nametable, functiontable, var);
-		Element listElem = list.eval(nametable, functiontable, var);
-		LinkedList<Element> res = new LinkedList<>();
+		Elem expElem = exp.eval(nametable, functiontable, var);
+		Elem listElem = list.eval(nametable, functiontable, var);
+		LinkedList<Elem> res = new LinkedList<>();
 		res.add(expElem);
 		res.addAll(listElem.getList());
-		return new Element(res);
+		return new Elem(res);
 	}
 	
 	@Override
@@ -298,7 +261,7 @@ class Car extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return list.eval(nametable, functiontable, var).getList().get(0);
 	}
@@ -318,13 +281,13 @@ class Cdr extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		List<Element> listEval = list.eval(nametable, functiontable, var)
+		List<Elem> listEval = list.eval(nametable, functiontable, var)
 				.getList();
-		LinkedList<Element> res = new LinkedList<>();
+		LinkedList<Elem> res = new LinkedList<>();
 		res.addAll(listEval.subList(1, listEval.size()));
-		return new Element(res);
+		return new Elem(res);
 	}
 	
 	@Override
@@ -342,10 +305,10 @@ class NullP extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return list.eval(nametable, functiontable, var).getList().isEmpty() ?
-				new Element(1) : new Element(0);
+				new Elem(1) : new Elem(0);
 	}
 	
 	@Override
@@ -363,10 +326,10 @@ class IntP extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return exp.eval(nametable, functiontable, var).isInt() ? new Element(1)
-				: new Element(0);
+		return exp.eval(nametable, functiontable, var).isInt() ? new Elem(1)
+				: new Elem(0);
 	}
 	
 	@Override
@@ -384,10 +347,10 @@ class ListP extends Expr {
 	}
 
 	@Override
-	public Element eval(HashMap<String, Element> nametable,
+	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return exp.eval(nametable, functiontable, var).isList() ? new Element(1)
-				: new Element(0);
+		return exp.eval(nametable, functiontable, var).isList() ? new Elem(1)
+				: new Elem(0);
 	}
 	
 	@Override
@@ -401,7 +364,7 @@ abstract class Statement {
 	public Statement() {
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws ReturnValue {
 	}
@@ -420,7 +383,7 @@ class DefineStatement extends Statement {
 		proc = process;
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functable, LinkedList var) {
 		// get the named proc object from the function table.
 		// System.out.println("Adding Process:"+name+" to Functiontable");
@@ -436,7 +399,7 @@ class ReturnStatement extends Statement {
 		expr = e;
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws ReturnValue {
 		// Java can't throw exceptions of numbers, so we'll convert it to a
@@ -456,7 +419,7 @@ class AssignStatement extends Statement {
 		expr = e;
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		/* add name to the statementlist of variable names */
 		if (!var.contains(name)) {
@@ -490,7 +453,7 @@ class IfStatement extends Statement {
 		stmtlist1 = list;
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws ReturnValue {
 		if (expr.eval(nametable, functiontable, var).getInt() > 0) {
@@ -511,7 +474,7 @@ class WhileStatement extends Statement {
 		stmtlist = list;
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws ReturnValue {
 		while (expr.eval(nametable, functiontable, var).getInt() > 0) {
@@ -530,7 +493,7 @@ class RepeatStatement extends Statement {
 		sl = list;
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws ReturnValue {
 		do {
@@ -591,13 +554,13 @@ class ExpressionList {
  */
 class ReturnValue extends Exception {
 
-	private Element retValue;
+	private Elem retValue;
 
-	public ReturnValue(Element retValue) {
+	public ReturnValue(Elem retValue) {
 		this.retValue = retValue;
 	}
 
-	public Element getRetValue() {
+	public Elem getRetValue() {
 		return retValue;
 	}
 }
@@ -611,7 +574,7 @@ class StatementList {
 		statementlist.add(statement);
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws ReturnValue {
 
@@ -641,11 +604,11 @@ class Proc {
 		stmtlist = sl;
 	}
 
-	public Element apply(HashMap<String, Element> nametable,
+	public Elem apply(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var,
 			ExpressionList expressionlist) {
 		// System.out.println("Executing Proceedure");
-		HashMap<String, Element> newnametable = new HashMap<String, Element>();
+		HashMap<String, Elem> newnametable = new HashMap<String, Elem>();
 
 		// bind parameters in new name table
 		// we need to get the underlying List structure that the ParamList
@@ -687,14 +650,16 @@ class Proc {
 }
 
 class Program {
-
+	// dynamic memory allocation heap
+	public static Heap HEAP = new Heap(64);
+	
 	private StatementList stmtlist;
 
 	public Program(StatementList list) {
 		stmtlist = list;
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		try {
 			stmtlist.eval(nametable, functiontable, var);
@@ -703,7 +668,7 @@ class Program {
 		}
 	}
 
-	public void dump(HashMap<String, Element> nametable,
+	public void dump(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		// System.out.println(hm.values());
 		System.out.println("Dumping out all the variables...");
