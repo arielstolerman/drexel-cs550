@@ -91,6 +91,8 @@ class Elem {
 	public void mark() {
 		marked = true;
 		if (isList)
+			heap.elemAt(value).mark();
+		if (nextIndex != Heap.NULL)
 			heap.elemAt(nextIndex).mark();
 	}
 	
@@ -139,7 +141,6 @@ public class Heap {
 	 * and available heap size accordingly. 
 	 */
 	private void gc() {
-		if (availSize > 0) return;
 		mark();
 		sweep();
 		clearMarks();
