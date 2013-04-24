@@ -116,8 +116,6 @@ public class Heap {
 	private Elem[] data;
 	private int avail;
 	private int availSize;
-	// to hold all currently active cells for mark-and-sweep
-	private Set<Elem> activeCells;
 	
 	/**
 	 * Constructor for heap; initializes the heap to the given size, with all
@@ -133,15 +131,14 @@ public class Heap {
 			data[i] = new Elem(0, false, i + 1, this);
 		}
 		data[size - 1].setNextIndex(NULL);
-		activeCells = new HashSet<>();
 	}
 	
 	/**
 	 * Runs the mark-and-sweep garbage collector and updates the avail pointer
 	 * and available heap size accordingly. 
 	 */
-	private void gc() {
-		mark();
+	private void gc(HashMap<String,Element> nametable) {
+		mark(nametable);
 		sweep();
 		clearMarks();
 	}
@@ -149,9 +146,10 @@ public class Heap {
 	/**
 	 * Marks all currently pointed elements in the heap recursively.
 	 */
-	private void mark() {
-		for (Elem elem: activeCells) {
-			elem.mark();
+	private void mark(HashMap<String,Element> nametable) {
+		for (Element e: nametable.values()) {
+			if (e.isList())
+				data[e.getValue()].mark(); // TODO Element should have getValue() which returns the index 
 		}
 	}
 	
@@ -185,7 +183,7 @@ public class Heap {
 			elem.unmark();
 	}
 	
-	public Elem cons() {
+	public Elem cons(HashMap<String,Element> nametable) {
 		// TODO
 		return null;
 	}
