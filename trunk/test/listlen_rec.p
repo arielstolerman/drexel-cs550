@@ -1,7 +1,7 @@
 define listlen
 proc(l)
 	if intp(l) then
-		return -1
+		return 0
 	else
 		if nullp(l) then
 			return 0
@@ -11,5 +11,7 @@ proc(l)
 	fi
 end;
 
-x := listlen([1,2,3]);
-y := listlen([]);
+l := listlen([1,2,3]);
+m := listlen([1,[2,3,4],5]);
+n := listlen([]);
+o := listlen(666)
