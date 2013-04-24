@@ -14,18 +14,27 @@ class Elem {
 	private int nextIndex;
 	
 	// Mark-and-Sweep metadata
+	private Heap heap;
 	private boolean marked;
 	
 	/**
-	 * Constructor for heap element from value, whether it is a list (i.e.
-	 * whether value is a number or an index to another element in the heap)
-	 * and the next pointer that points to the next element in the heap.
+	 * Constructor for heap element.
+	 * @param value element value (can be an number or a heap index, i.e. a
+	 * list).
+	 * @param isList whether value is a number or an index to another element in
+	 * the heap.
+	 * @param nextIndex the next pointer that points to the next element in the
+	 * heap.
+	 * @param heap the heap this element belongs to.
 	 */
-	public Elem(int value, boolean isList, int nextIndex) {
+	public Elem(int value, boolean isList, int nextIndex, Heap heap) {
 		this.value = value;
+		this.isList = isList;
 		this.nextIndex = nextIndex;
-		
+		this.heap = heap;
 	}
+	
+	// queries
 	
 	/**
 	 * Returns true if this element holds a list.
@@ -41,6 +50,15 @@ class Elem {
 	public boolean isInt() {
 		return !isList;
 	}
+	
+	/**
+	 * Returns true if this element is marked.
+	 */
+	public boolean isMarked() {
+		return marked;
+	}
+	
+	// setters
 	
 	/**
 	 * Sets the pointer to the next element to the given index.
@@ -65,6 +83,22 @@ class Elem {
 	public void setTpListVal(int value) {
 		this.value = value;
 		isList = true;
+	}
+	
+	/**
+	 * Marks this element recursively.
+	 */
+	public void mark() {
+		marked = true;
+		if (isList)
+			heap.elemAt(nextIndex).mark();
+	}
+	
+	/**
+	 * Unmarks this element.
+	 */
+	public void unmark() {
+		marked = false;
 	}
 }
 
@@ -94,7 +128,7 @@ public class Heap {
 		avail = 0;
 		availSize = size;
 		for (int i = 0; i < size; i++) {
-			data[i] = new Elem(0, false, i + 1);
+			data[i] = new Elem(0, false, i + 1, this);
 		}
 		data[size - 1].setNextIndex(NULL);
 		activeCells = new HashSet<>();
@@ -104,17 +138,50 @@ public class Heap {
 	 * Runs the mark-and-sweep garbage collector and updates the avail pointer
 	 * and available heap size accordingly. 
 	 */
-	private int gc() {
-		// TODO
-		return 0;
+	private void gc() {
+		if (availSize > 0) return;
+		mark();
+		sweep();
+		clearMarks();
 	}
 	
+	/**
+	 * Marks all currently pointed elements in the heap recursively.
+	 */
 	private void mark() {
-		// TODO
+		for (Elem elem: activeCells) {
+			elem.mark();
+		}
 	}
 	
+	/**
+	 * Sweeps all unpointed elements in the heap, udpates their next references
+	 * and updated avail and availSize accordingly.
+	 */
 	private void sweep() {
-		// TODO
+		Elem elem;
+		for (int i = 0; i < data.length; i++) {
+			elem = data[i];
+			// skip if this element is marked
+			if (elem.isMarked())
+				continue;
+			// otherwise reset element, update availability and size
+			elem.setToIntVal(0);
+			if (avail == NULL)
+				elem.setNextIndex(NULL);
+			else
+				elem.setNextIndex(avail);
+			avail = i;
+			availSize++;
+		}
+	}
+	
+	/**
+	 * Clears all marks in the heap.
+	 */
+	private void clearMarks() {
+		for (Elem elem: data)
+			elem.unmark();
 	}
 	
 	public Elem cons() {
@@ -130,5 +197,9 @@ public class Heap {
 	
 	public int availSize() {
 		return availSize;
+	}
+	
+	public Elem elemAt(int index) {
+		return data[index];
 	}
 }
