@@ -7,9 +7,14 @@
  * C++ version.
  */
 
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.*;
+
+import original.Expr;
+import original.ExpressionList;
+import original.ParamList;
+import original.Proc;
+import original.Statement;
+import original.StatementList;
 
 /**
  * Generic element that can be either an integer or a list of elements.
@@ -77,6 +82,16 @@ class Lst extends Expr {
 		list.addAll(el.getExpressions());
 	}
 	
+	public Lst(Expr ex) {
+		this();
+		list.add(ex);
+	}
+	
+	public Lst prepend(Expr ex) {
+		list.add(0,ex);
+		return this;
+	}
+	
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
@@ -90,6 +105,29 @@ class Lst extends Expr {
 		return list;
 	}
 }
+
+/*
+class Sequence extends Expr {
+	
+	private List<Expr> list;
+	
+	public Sequence(Expr ex, Expr seq) {
+		this(ex);
+		list.
+	}
+	
+	public Sequence(Expr ex) {
+		list = new LinkedList<>();
+		list.add(ex);
+	}
+	
+	@Override
+	public Element eval(HashMap<String, Element> nametable,
+			HashMap<String, Proc> functiontable, LinkedList var) {
+		
+	}
+}
+*/
 
 class Ident extends Expr {
 
@@ -185,6 +223,27 @@ class FunctionCall extends Expr {
 	}
 }
 
+class Concat extends Expr {
+	
+	private Expr list1;
+	private Expr list2;
+	
+	public Concat(Expr list1, Expr list2) {
+		this.list1 = list1;
+		this.list2 = list2;
+	}
+	
+	@Override
+	public Element eval(HashMap<String, Element> nametable,
+			HashMap<String, Proc> functiontable, LinkedList var) {
+		// TODO Auto-generated method stub
+		List<Element> res = new LinkedList<>();
+		res.addAll(list1.eval(nametable, functiontable, var).getList());
+		res.addAll(list2.eval(nametable, functiontable, var).getList());
+		return new Element(res);
+	}
+}
+
 class Cons extends Expr {
 	
 	private Expr exp;
@@ -201,10 +260,7 @@ class Cons extends Expr {
 		Element expElem = exp.eval(nametable, functiontable, var);
 		Element listElem = list.eval(nametable, functiontable, var);
 		LinkedList<Element> res = new LinkedList<>();
-		if (expElem.isList())
-			res.addAll(expElem.getList());
-		else
-			res.add(expElem);
+		res.add(expElem);
 		res.addAll(listElem.getList());
 		return new Element(res);
 	}
