@@ -28,7 +28,15 @@ action code {:
 :}
 
 parser code {:
-
+	
+	public static int INDENT = 0;
+	public static String ind() {
+		String res = "";
+		for (int i = 0; i < INDENT; i++)
+			res += "  ";
+		return res;
+	}
+	
 	/* this part is included in the parser class */
 	public static void main (String args[]) throws Exception{
 		InputStream is = System.in;
@@ -159,10 +167,12 @@ expr ::=
 	:} |
 	list:l1 CONCAT list:l2
 	{:
+		System.out.println("expr->concat");
 		RESULT = new Concat(l1,l2);
 	:} |
 	term:t
 	{:
+		System.out.println("expr->term");
 		RESULT = t;
 	:};
 
@@ -173,77 +183,95 @@ term ::=
 	:} |
 	factor:f
 	{:
+		System.out.println("term->factor");
 		RESULT = f;
 	:};
 
 factor ::=
 	LPAREN expr:e RPAREN
 	{:
+		System.out.println("factor->( expr )");
 		RESULT = e;
 	:} |
 	NUMBER:n
 	{:
+		System.out.println("factor->number");
 		RESULT = new Number(n);
 	:} |
 	ID:i
 	{:
+		System.out.println("factor->id");
 		RESULT = new Ident(i);
 	:} |
 	funcall:fc
 	{:
+		System.out.println("factor->funcall");
 		RESULT = fc;
 	:} |
 	CONS LPAREN expr:e COMMA list:l RPAREN
 	{:
+		System.out.println("factor->cons");
 		RESULT = new Cons(e,l);
 	:} |
 	CAR LPAREN list:l RPAREN
 	{:
+		System.out.println("factor->car");
 		RESULT = new Car(l);
 	:} |
 	CDR LPAREN list:l RPAREN
 	{:
+		System.out.println("factor->cdr");
 		RESULT = new Cdr(l);
 	:} |
 	NULLP LPAREN list:l RPAREN
 	{:
+		System.out.println("factor->nullp");
 		RESULT = new NullP(l);
 	:} |
 	INTP LPAREN expr:e RPAREN
 	{:
+		System.out.println("factor->intp");
 		RESULT = new IntP(e);
 	:} |
 	LISTP LPAREN expr:e RPAREN
 	{:
+		System.out.println("factor->listp");
 		RESULT = new ListP(e);
 	:} |
 	list:l
 	{:
+		System.out.println("factor->list");
 		RESULT = l;
 	:};
 
 funcall ::=
 	ID:i LPAREN expr_list:el RPAREN
 	{:
+		System.out.println("funcall-> id ( expr_list )");
 		RESULT = new FunctionCall(i,el);
-	:};
-
-expr_list ::=
-	expr:ex COMMA expr_list:el
-	{:
-		RESULT = new ExpressionList(ex,el);
-	:} |
-	expr:ex
-	{:
-		RESULT = new ExpressionList(ex);
 	:};
 
 list ::=
 	LBRACKET expr_list:el RBRACKET
 	{:
+		System.out.println("list-> [ expr_list ]");
 		RESULT = new Lst(el);
 	:} |
 	LBRACKET RBRACKET
 	{:
+		System.out.println("list -> [ ]");
 		RESULT = new Lst();
 	:};
+
+expr_list ::=
+	expr:ex COMMA expr_list:el
+	{:
+		System.out.println("expr_list -> expr , expr_list");
+		RESULT = new ExpressionList(ex,el);
+	:} |
+	expr:ex
+	{:
+		System.out.println("expr_list -> expr");
+		RESULT = new ExpressionList(ex);
+	:};
+
