@@ -51,8 +51,7 @@ non terminal StatementList statement_list;
 non terminal ParamList param_list;
 non terminal ExpressionList expr_list;
 non terminal Statement statement, assign_statement, if_statement, while_statement, repeat_statement, define_statement, return_statement;
-non terminal Expr element, expr, list, term, factor, funcall;
-/* non terminal Lst list; */
+non terminal Expr expr, term, factor, funcall, list;
 
 /* program */
 program ::=
@@ -102,7 +101,7 @@ statement ::=
 	:};
 
 assign_statement ::=
-	ID:i ASSIGN element:e
+	ID:i ASSIGN expr:e
 	{:
 		RESULT = new AssignStatement(i,e); 
 	:};
@@ -148,15 +147,6 @@ param_list ::=
 	:};
 
 /* expressions */
-element ::=
-	expr:e
-	{:
-		RESULT = e;
-	:} |
-	list:l
-	{:
-		RESULT = l;
-	:};
 
 expr ::=
 	expr:e PLUS term:t
@@ -169,7 +159,7 @@ expr ::=
 	:} |
 	list:l1 CONCAT list:l2
 	{:
-		RESULT = new Cons(l1,l2);
+		RESULT = new Concat(l1,l2);
 	:} |
 	term:t
 	{:
@@ -203,7 +193,7 @@ factor ::=
 	{:
 		RESULT = fc;
 	:} |
-	CONS LPAREN element:e COMMA list:l RPAREN
+	CONS LPAREN expr:e COMMA list:l RPAREN
 	{:
 		RESULT = new Cons(e,l);
 	:} |
@@ -219,13 +209,17 @@ factor ::=
 	{:
 		RESULT = new NullP(l);
 	:} |
-	INTP LPAREN element:e RPAREN
+	INTP LPAREN expr:e RPAREN
 	{:
 		RESULT = new IntP(e);
 	:} |
-	LISTP LPAREN element:e RPAREN
+	LISTP LPAREN expr:e RPAREN
 	{:
 		RESULT = new ListP(e);
+	:} |
+	list:l
+	{:
+		RESULT = l;
 	:};
 
 funcall ::=
@@ -235,13 +229,13 @@ funcall ::=
 	:};
 
 expr_list ::=
-	element:e COMMA expr_list:el
+	expr:ex COMMA expr_list:el
 	{:
-		RESULT = new ExpressionList(e,el);
+		RESULT = new ExpressionList(ex,el);
 	:} |
-	element:e
+	expr:ex
 	{:
-		RESULT = new ExpressionList(e);
+		RESULT = new ExpressionList(ex);
 	:};
 
 list ::=
