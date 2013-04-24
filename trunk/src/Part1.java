@@ -9,13 +9,6 @@
 
 import java.util.*;
 
-import original.Expr;
-import original.ExpressionList;
-import original.ParamList;
-import original.Proc;
-import original.Statement;
-import original.StatementList;
-
 /**
  * Generic element that can be either an integer or a list of elements.
  */
