@@ -61,6 +61,9 @@ abstract class Expr {
 
 	public abstract Element eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var);
+	
+	@Override
+	public abstract String toString();
 }
 
 class Lst extends Expr {
@@ -229,8 +232,7 @@ class FunctionCall extends Expr {
 	
 	@Override
 	public String toString() {
-		return "FUNCALL: " + funcid + " " +
-				explist.getExpressions().toString()
+		return funcid + " " + explist.getExpressions().toString()
 				.replace("[","( ").replace("]"," )");
 	}
 }
