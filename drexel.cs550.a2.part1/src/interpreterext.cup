@@ -39,9 +39,13 @@ parser code {:
 				is = new FileInputStream(new File(args[1]));
 			new parser(new Yylex(is)).parse();
 		}
+		catch(RuntimeException ex)
+		{
+			System.out.println("Runtime Exception: " + ex.getMessage());
+		}
 		catch(Exception ex)
 		{
-			System.out.println(ex.getMessage());
+			System.out.println("Other Exception: " + ex.getMessage());
 		}
 	}
 :}
