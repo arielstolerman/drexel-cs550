@@ -9,7 +9,7 @@ VIEWER=more
 ### part 1 ####
 
 run-part1 : Yylex.class parser.class sym.class Part1.class
-	@java -classpath ".;../lib/java-cup-11a.jar" parser
+	@java -classpath ".:../lib/java-cup-11a.jar" parser
 
 Yylex.class parser.class sym.class Part1.class : Yylex.java parser.java sym.java Part1.java
 	@javac -classpath ../lib/java-cup-11a.jar Yylex.java parser.java sym.java Part1.java

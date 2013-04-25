@@ -30,11 +30,19 @@ action code {:
 parser code {:
 	
 	/* this part is included in the parser class */
-	public static void main (String args[]) throws Exception{
-		InputStream is = System.in;
-		if (args.length == 2 && args[0].equals("-i"))
-			is = new FileInputStream(new File(args[1]));
-		new parser(new Yylex(is)).parse();
+	public static void main (String args[]) throws Exception
+	{
+		try
+		{
+			InputStream is = System.in;
+			if (args.length == 2 && args[0].equals("-i"))
+				is = new FileInputStream(new File(args[1]));
+			new parser(new Yylex(is)).parse();
+		}
+		catch(Exception ex)
+		{
+			System.out.println(ex.getMessage());
+		}
 	}
 :}
 
