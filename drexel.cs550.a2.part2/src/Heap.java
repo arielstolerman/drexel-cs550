@@ -161,6 +161,9 @@ public class Heap {
 	// mark null indices, i.e. end of list
 	public static final int NULL = -1;
 	
+	// temporary elements to be marked
+	public static LinkedList<Elem> tmpToMark = new LinkedList<>();
+	
 	// heap data
 	private Elem[] data;
 	private int avail;
@@ -193,12 +196,16 @@ public class Heap {
 	}
 	
 	/**
-	 * Marks all currently pointed elements in the heap recursively.
+	 * Marks all currently pointed elements and temporary elements still in use
+	 * in the heap recursively.
 	 */
 	private void mark(HashMap<String,Elem> nametable) {
-		for (Elem e: nametable.values()) {
+		Set<Elem> toMark = new HashSet<>();
+		toMark.addAll(nametable.values());
+		toMark.addAll(tmpToMark);
+		for (Elem e: toMark) {
 			if (e.isList())
-				data[e.getValue()].mark(); // TODO Elem should have getValue() which returns the index 
+				data[e.getValue()].mark(); 
 		}
 	}
 	

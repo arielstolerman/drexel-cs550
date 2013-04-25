@@ -67,7 +67,13 @@ class Lst extends Expr {
 		Elem car = list.get(0).eval(nametable, functiontable, var);
 		Elem cdr = list.size() == 1 ? null :
 			buildList(list.subList(1, list.size()), nametable, functiontable, var);
-		return Program.HEAP.cons(car, cdr, nametable);
+		
+		// set current cdr to be marked in case of a gc call
+		Heap.tmpToMark.addFirst(cdr);
+		Elem res = Program.HEAP.cons(car, cdr, nametable);
+		Heap.tmpToMark.removeFirst();
+		
+		return res;
 	}
 }
 
@@ -213,10 +219,22 @@ class Concat extends Expr {
 	@Override
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		List<Elem> res = new LinkedList<>();
-		res.addAll(list1.eval(nametable, functiontable, var).getList());
-		res.addAll(list2.eval(nametable, functiontable, var).getList());
-		return new Elem(res);
+		// evaluate car and copy locally in case of gc call during cdr eval
+		Elem first = list1.eval(nametable, functiontable, var);
+		LinkedList<Elem> carElems = new LinkedList<>();
+		do {
+			carElems.add(first);
+			first = first.getNext();
+		} while (first.hasNext());
+		
+		Elem res = list2.eval(nametable, functiontable, var);
+		Elem toAdd;
+		while (!carElems.isEmpty()) {
+			toAdd = carElems.removeLast();
+			Program.HEAP.cons(toAdd, res, nametable);
+			res = toAdd;
+		}
+		return res;
 	}
 	
 	@Override
