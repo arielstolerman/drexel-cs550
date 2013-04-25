@@ -556,7 +556,11 @@ class IfStatement extends Statement {
 	public void eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		if (expr.eval(nametable, functiontable, var).getInt() > 0) {
+		Element cond = expr.eval(nametable, functiontable, var);
+		if (!cond.isInt())
+			throw new RuntimeException("IF condition must be an integer: " +
+					"IF " + cond + " THEN ... invalid");
+		if (cond.getInt() > 0) {
 			stmtlist1.eval(nametable, functiontable, var);
 		} else {
 			stmtlist2.eval(nametable, functiontable, var);
