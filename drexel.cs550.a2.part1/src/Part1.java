@@ -585,7 +585,11 @@ class WhileStatement extends Statement {
 	public void eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		while (expr.eval(nametable, functiontable, var).getInt() > 0) {
+		Element cond = expr.eval(nametable, functiontable, var);
+		if (!cond.isInt())
+			throw new RuntimeException("WHILE condition must be an integer: " +
+					"WHILE " + cond + " DO ... invalid");
+		while (cond.getInt() > 0) {
 			stmtlist.eval(nametable, functiontable, var);
 		}
 	}
@@ -604,9 +608,13 @@ class RepeatStatement extends Statement {
 	public void eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
+		Element cond = expr.eval(nametable, functiontable, var);
+		if (!cond.isInt())
+			throw new RuntimeException("REPEAT condition must be an integer: " +
+					"... REPEAT " + cond + " invalid");
 		do {
 			sl.eval(nametable, functiontable, var);
-		} while (expr.eval(nametable, functiontable, var).getInt() > 0);
+		} while (cond.getInt() > 0);
 
 	}
 }
