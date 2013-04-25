@@ -245,8 +245,8 @@ class Concat extends Expr {
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		// evaluate first list and copy locally in case of gc call during cdr
-		// eval
+		// evaluate first list and copy locally in case it is not in the
+		// nametable and gc is called during second list evaluation
 		Elem first = list1.eval(nametable, functiontable, var);
 		if (!first.isList())
 			throw new RuntimeException("First parameter to CONCAT not a list: "
