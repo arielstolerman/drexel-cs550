@@ -99,12 +99,43 @@ class Elem {
 	}
 	
 	/**
+	 * Returns the int value of the element (can be either an integer or a
+	 * list index).
+	 */
+	public int getRawValue() {
+		return value;
+	}
+	
+	@Override
+	public String toString() {
+		if (!isList)
+			return value + "";
+		else {
+			String res = "[";
+			Elem curr = heap.elemAt(value);
+			while (curr != null) {
+				res += curr.toString() + ", ";
+				curr = curr.getNext();
+			}
+			res = res.substring(0,res.length() - 2) + "]";
+			return res;
+		}
+	}
+	
+	/**
 	 * Returns the next element, or NULL if none exists.
 	 */
 	public Elem getNext() {
 		if (nextIndex == Heap.NULL)
 			return null;
 		return heap.elemAt(nextIndex);
+	}
+	
+	/**
+	 * Returns the index in the heap of the next element.
+	 */
+	public int getNextIndex() {
+		return nextIndex;
 	}
 	
 	// setters
@@ -277,5 +308,30 @@ public class Heap {
 		if (!(e = data[index]).isList())
 			return null;
 		return e;
+	}
+	
+	@Override
+	public String toString() {
+		String lines = "---------------------------";
+		String res = "IND | CAR    | l | CDR | m \n" + lines + "\n";
+		for (int i = 0; i < data.length; i++) {
+			res += String.format(
+					"%03d | %-6d | %s | %03d | %s \n",
+					i, data[i].getRawValue(),
+					data[i].isList() ? "*" : " ",
+					data[i].getNextIndex(),
+					data[i].isMarked() ? "*" : " ");
+			if (i > 0 && i % 10 == 0)
+				res += lines + "\n";
+		}
+		return res;
+	}
+	
+	// for testing
+	public static void main(String[] args) {
+		Heap h = new Heap(15);
+		h.data[7].setNextIndex(NULL);
+		h.data[3].mark();
+		System.out.println(h);
 	}
 }
