@@ -11,8 +11,7 @@
 
 import java.util.*;
 
-import tmp.Elem;
-import tmp.Heap;
+import javax.management.RuntimeErrorException;
 
 abstract class Expr {
 
@@ -51,7 +50,7 @@ class Lst extends Expr {
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		return buildList(list, nametable, functiontable, var);
+		return Elem.getLocalListElem(buildList(list, nametable, functiontable, var));
 	}
 
 	public List<Expr> getList() {
@@ -76,9 +75,9 @@ class Lst extends Expr {
 				list.subList(1, list.size()), nametable, functiontable, var);
 
 		// set current cdr to be marked in case of a gc call
-		Heap.tmpToMark.addFirst(cdr);
+		Program.HEAP.tmpToMark.addFirst(cdr);
 		Elem res = Program.HEAP.cons(car, cdr, nametable);
-		Heap.tmpToMark.removeFirst();
+		Program.HEAP.tmpToMark.removeFirst();
 
 		return res;
 	}
@@ -117,7 +116,7 @@ class Number extends Expr {
 
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return new Elem(value);
+		return Elem.getLocalIntElem(value);
 	}
 
 	@Override
@@ -143,7 +142,7 @@ class Times extends Expr {
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("TIMES called on a list: " + e1
 					+ " TIMES " + e2 + " not valid");
-		return new Elem(e1.getValue() * e2.getValue());
+		return Elem.getLocalIntElem(e1.getInt() * e2.getInt());
 	}
 
 	@Override
@@ -169,7 +168,7 @@ class Plus extends Expr {
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("PLUS called on a list: " + e1
 					+ " PLUS " + e2 + " not valid");
-		return new Elem(e1.getValue() + e2.getValue());
+		return Elem.getLocalIntElem(e1.getInt() + e2.getInt());
 	}
 
 	@Override
@@ -195,7 +194,7 @@ class Minus extends Expr {
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("MINUS called on a list: " + e1
 					+ " MINUS " + e2 + " not valid");
-		return new Elem(e1.getValue() - e2.getValue());
+		return Elem.getLocalIntElem(e1.getInt() - e2.getInt());
 	}
 
 	@Override
@@ -292,18 +291,12 @@ class Cons extends Expr {
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		Elem expElem = exp.eval(nametable, functiontable, var);
-		Elem listElem = list.eval(nametable, functiontable, var);
-
-		if (!listElem.isList()) {
+		Elem car = exp.eval(nametable, functiontable, var);
+		Elem cdr = list.eval(nametable, functiontable, var);
+		if (!cdr.isList())
 			throw new RuntimeException("Second parameter to CONS not a list: "
-					+ "CONS ( " + expElem + ", " + listElem + " )" + " invalid");
-		}
-
-		LinkedList<Elem> res = new LinkedList<>();
-		res.add(expElem);
-		res.addAll(listElem.getList());
-		return new Elem(res);
+					+ "CONS ( " + car + ", " + cdr + " )" + " invalid");
+		return Elem.getLocalListElem(Program.HEAP.cons(car, cdr, nametable));
 	}
 
 	@Override
@@ -330,7 +323,11 @@ class Car extends Expr {
 			throw new RuntimeException("Parameter to CAR not a list: "
 					+ "CAR ( " + e + " )" + " not valid");
 		}
-		return e.getList().get(0);
+		Elem car = e.getList();
+		if (car.isList())
+			return Elem.getLocalListElem(car.getList());
+		else
+			return Elem.getLocalIntElem(car.getInt());
 	}
 
 	@Override
@@ -355,13 +352,16 @@ class Cdr extends Expr {
 		Elem e = list.eval(nametable, functiontable, var);
 		if (!(e.isList())) {
 			throw new RuntimeException("Parameter to CDR not a list: "
-					+ "CDR ( " + e + " )" + " not valid");
+					+ "CDR ( " + e + " ) invalid");
 		}
-
-		List<Elem> listEval = e.getList();
-		LinkedList<Elem> res = new LinkedList<>();
-		res.addAll(listEval.subList(1, listEval.size()));
-		return new Elem(res);
+		if (e.getRawValue() == Heap.NULL)
+			throw new RuntimeException("Cannot call CDR on an empty list: "
+					+ "CDR ( " + e + " ) invalid");
+		Elem cdr = e.getList().getNext();
+		if (cdr.isList())
+			return Elem.getLocalListElem(cdr.getList());
+		else
+			return Elem.getLocalIntElem(cdr.getInt());
 	}
 
 	@Override
@@ -389,7 +389,8 @@ class NullP extends Expr {
 			throw new RuntimeException("Parameter to NULLP not a list: "
 					+ "NULLP ( " + e + " )" + " not valid");
 		}
-		return e.getList().isEmpty() ? new Elem(1) : new Elem(0);
+		return e.getList().getRawValue() == Heap.NULL ?
+				Elem.getLocalIntElem(1) : Elem.getLocalIntElem(0);
 	}
 
 	@Override
@@ -410,8 +411,8 @@ class IntP extends Expr {
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		return exp.eval(nametable, functiontable, var).isInt() ? new Elem(1)
-				: new Elem(0);
+		return exp.eval(nametable, functiontable, var).isInt() ?
+				Elem.getLocalIntElem(1) : Elem.getLocalIntElem(0);
 	}
 
 	@Override
@@ -432,8 +433,8 @@ class ListP extends Expr {
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		return exp.eval(nametable, functiontable, var).isList() ? new Elem(1)
-				: new Elem(0);
+		return exp.eval(nametable, functiontable, var).isList() ?
+				Elem.getLocalIntElem(1) : Elem.getLocalIntElem(0);
 	}
 
 	@Override
@@ -549,7 +550,11 @@ class IfStatement extends Statement {
 	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		if (expr.eval(nametable, functiontable, var).getInt() > 0) {
+		Elem cond = expr.eval(nametable, functiontable, var);
+		if (!cond.isInt())
+			throw new RuntimeException("IF condition must be an integer: " +
+					"IF " + cond + " THEN ... invalid");
+		if (cond.getInt() > 0) {
 			stmtlist1.eval(nametable, functiontable, var);
 		} else {
 			stmtlist2.eval(nametable, functiontable, var);
@@ -575,7 +580,11 @@ class WhileStatement extends Statement {
 	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		while (expr.eval(nametable, functiontable, var).getInt() > 0) {
+		Elem cond = expr.eval(nametable, functiontable, var);
+		if (!cond.isInt())
+			throw new RuntimeException("WHILE condition must be an integer: " +
+					"WHILE " + cond + " DO ... invalid");
+		while (cond.getInt() > 0) {
 			stmtlist.eval(nametable, functiontable, var);
 		}
 	}
@@ -594,9 +603,13 @@ class RepeatStatement extends Statement {
 	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
+		Elem cond = expr.eval(nametable, functiontable, var);
+		if (!cond.isInt())
+			throw new RuntimeException("REPEAT condition must be an integer: " +
+					"... REPEAT " + cond + " invalid");
 		do {
 			sl.eval(nametable, functiontable, var);
-		} while (expr.eval(nametable, functiontable, var).getInt() > 0);
+		} while (cond.getInt() > 0);
 
 	}
 }
