@@ -168,7 +168,7 @@ class Times extends Expr {
 		Element e2 = expr2.eval(nametable, functiontable, var);
 		if (e1.isList() || e2.isList()) {
 			throw new RuntimeException("TIMES called on a list: " + e1
-					+ " TIMES " + e2 + " not valid");
+					+ " TIMES " + e2 + " invalid");
 		}
 
 		return new Element(e1.getInt() * e2.getInt());
@@ -196,7 +196,7 @@ class Plus extends Expr {
 		Element e2 = expr2.eval(nametable, functiontable, var);
 		if (e1.isList() || e2.isList()) {
 			throw new RuntimeException("PLUS called on a list: " + e1
-					+ " PLUS " + e2 + " not valid");
+					+ " PLUS " + e2 + " invalid");
 		}
 
 		return new Element(e1.getInt() + e2.getInt());
@@ -224,7 +224,7 @@ class Minus extends Expr {
 		Element e2 = expr2.eval(nametable, functiontable, var);
 		if (e1.isList() || e2.isList()) {
 			throw new RuntimeException("MINUS called on a list: " + e1
-					+ " MINUS " + e2 + " not valid");
+					+ " MINUS " + e2 + " invalid");
 		}
 		return new Element(e1.getInt() - e2.getInt());
 	}
@@ -281,7 +281,7 @@ class Concat extends Expr {
 
 		if (!e1.isList() || !e2.isList()) {
 			throw new RuntimeException("Parameter to CONCAT not a list: " + e1
-					+ " || " + e2 + " not valid");
+					+ " || " + e2 + " invalid");
 		}
 
 		List<Element> res = new LinkedList<>();
@@ -314,9 +314,9 @@ class Cons extends Expr {
 		Element listElem = list.eval(nametable, functiontable, var);
 
 		if (!listElem.isList()) {
-			throw new RuntimeException("First parameter to CONS not a list: "
+			throw new RuntimeException("Second parameter to CONS not a list: "
 					+ "CONS ( " + expElem + ", " + listElem + " )"
-					+ " not valid");
+					+ " invalid");
 		}
 
 		LinkedList<Element> res = new LinkedList<>();
@@ -347,7 +347,7 @@ class Car extends Expr {
 		Element e = list.eval(nametable, functiontable, var);
 		if (!e.isList()) {
 			throw new RuntimeException("Parameter to CAR not a list: "
-					+ "CAR ( " + e + " )" + " not valid");
+					+ "CAR ( " + e + " )" + " invalid");
 		}
 		return e.getList().get(0);
 	}
@@ -374,7 +374,7 @@ class Cdr extends Expr {
 		Element e = list.eval(nametable, functiontable, var);
 		if (!(e.isList())) {
 			throw new RuntimeException("Parameter to CDR not a list: "
-					+ "CDR ( " + e + " )" + " not valid");
+					+ "CDR ( " + e + " )" + " invalid");
 		}
 
 		List<Element> listEval = e.getList();
@@ -406,7 +406,7 @@ class NullP extends Expr {
 
 		if (!(e.isList())) {
 			throw new RuntimeException("Parameter to NULLP not a list: "
-					+ "NULLP ( " + e + " )" + " not valid");
+					+ "NULLP ( " + e + " )" + " invalid");
 		}
 		return e.getList().isEmpty() ? new Element(1) : new Element(0);
 	}
