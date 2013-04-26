@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.Map.Entry;
 
 import javax.management.RuntimeErrorException;
 
@@ -106,7 +107,7 @@ class Elem {
 	 * returns null.
 	 */
 	public Elem getList() {
-		if (isList)
+		if (isList && value != Heap.NULL)
 			return heap.elemAt(value);
 		else
 			return null;
@@ -147,7 +148,9 @@ class Elem {
 				res += curr.toString() + ", ";
 				curr = curr.getNext();
 			}
-			res = res.substring(0,res.length() - 2) + "]";
+			if (res.endsWith(", "))
+				res = res.substring(0,res.length() - 2);
+			res += "]";
 			return res;
 		}
 	}
@@ -245,14 +248,15 @@ public class Heap {
 	 * reside on the heap.
 	 */
 	public Elem getLocalListElem(Elem elem) {
-		return new Elem(elem.getHeapIndex(), Heap.NULL, true, Heap.NULL, this);
+		int ind = elem == null ? Heap.NULL : elem.getHeapIndex();
+		return new Elem(ind, Heap.NULL, true, Heap.NULL, this);
 	}
 	
 	/**
 	 * Runs the mark-and-sweep garbage collector and updates the avail pointer
 	 * and available heap size accordingly. 
 	 */
-	private void gc(Elem car, Elem cdr, HashMap<String,Elem> nametable) {
+	private void gc(Elem car, Elem cdr, HashMap<String, Elem> nametable) {
 		mark(car,cdr,nametable);
 		sweep();
 		clearMarks(car);
@@ -262,7 +266,7 @@ public class Heap {
 	 * Marks all currently pointed elements and temporary elements still in use
 	 * in the heap recursively.
 	 */
-	private void mark(Elem car, Elem cdr, HashMap<String,Elem> nametable) {
+	private void mark(Elem car, Elem cdr, HashMap<String, Elem> nametable) {
 		// mark referenced lists on the heap
 		for (Elem e: nametable.values())
 			if (e.isList())
@@ -320,16 +324,16 @@ public class Heap {
 	 * @return
 	 */
 	public Elem cons(Elem car, Elem cdr, HashMap<String,Elem> nametable)
-			throws RuntimeException {
-		// TODO
-		// make sure to handle cases where cdr is null
-		
+			throws RuntimeException {		
 		// call gc if necessary
 		if (availSize == 0)
 			gc(car, cdr, nametable);
 		// if heap full, throw
 		if (availSize == 0)
-			throw new RuntimeException("Heap full, no room for " + car);
+			throw new RuntimeException(
+					"Heap full, no room for " + car + "\n" +
+					"Heap image at crash:\n" +
+					toString(nametable));
 		// add car and change avail accordingly
 		int newAvail = data[avail].getNextIndex();
 		Elem toAdd = new Elem(
@@ -369,25 +373,44 @@ public class Heap {
 		return e;
 	}
 	
-	@Override
-	public String toString() {
-		String lines = "-----------------------------------";
+	public String toString(HashMap<String, Elem> nametable) {
+		boolean vars = nametable != null;
+		String lines = "------------------------------------" +
+				(vars ? "--------" : "");
 		String res =
 				"AVAIL: " + avail + " AVAIL SIZE: " + availSize + "\n" +
 				lines + "\n" +
-				"AVAIL | IND | CAR    | l | CDR | m \n" + lines + "\n";
+				"AVAIL | IND | CAR    | l | CDR | m " +
+				(vars ? "| VARNAME" : "") + "\n" + lines + "\n";
 		for (int i = 0; i < data.length; i++) {
+			// get variable name, if exists
+			String var = "";
+			if (vars)
+			{
+				Elem tmp;
+				for (Entry<String, Elem> e: nametable.entrySet())
+					if ((tmp = e.getValue().getList()) != null && // non-empty list
+					tmp.getHeapIndex() == i)
+						var = e.getKey();
+			}
+					
 			res += String.format(
-					"  %s  | %03d | %-6d | %s | %03d | %s \n",
+					"  %s  | %03d | %-6d | %s | %03d | %s | %s\n",
 					i == avail ? "->" : "  ",
 					i, data[i].getRawValue(),
 					data[i].isList() ? "*" : " ",
 					data[i].getNextIndex(),
-					data[i].isMarked() ? "*" : " ");
+					data[i].isMarked() ? "*" : " ",
+					var);
 			if (i > 0 && i % 10 == 0)
 				res += lines + "\n";
 		}
 		return res;
+	}
+	
+	@Override
+	public String toString() {
+		return toString(null);
 	}
 	
 	// for testing
