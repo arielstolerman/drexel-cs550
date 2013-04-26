@@ -1,5 +1,7 @@
 import java.util.*;
 
+import javax.management.RuntimeErrorException;
+
 
 /**
  * The heap elements.
@@ -8,6 +10,7 @@ class Elem {
 	
 	// car
 	private int value;
+	private int heapIndex;
 	private boolean isList;
 	
 	// cdr
@@ -18,7 +21,7 @@ class Elem {
 	private boolean marked;
 	
 	/**
-	 * Constructor for heap element.
+	 * Constructor for heap element -- to be called only by the heap
 	 * @param value element value (can be an number or a heap index, i.e. a
 	 * list).
 	 * @param isList whether value is a number or an index to another element in
@@ -27,21 +30,30 @@ class Elem {
 	 * heap.
 	 * @param heap the heap this element belongs to.
 	 */
-	public Elem(int value, boolean isList, int nextIndex, Heap heap) {
+	public Elem(int value, int heapIndex, boolean isList, int nextIndex, Heap heap) {
 		this.value = value;
+		this.heapIndex = heapIndex;
 		this.isList = isList;
 		this.nextIndex = nextIndex;
 		this.heap = heap;
 	}
 	
+	// constructors for local int/list elements not on the heap
+	
 	/**
-	 * Constructor for numeric elements used by the program, but are NOT stored
-	 * on the heap.
+	 * Creates new local element for an integer value.
 	 */
-	public Elem(int value) {
-		this(value,false,Heap.NULL,null);
+	public static Elem getLocalIntElem(int value) {
+		return new Elem(value, Heap.NULL, false, Heap.NULL, null);
 	}
 	
+	/**
+	 * Creates new local element for a list value.
+	 */
+	public static Elem getLocalListElem(Elem elem) {
+		return new Elem(elem.heapIndex, Heap.NULL, true, Heap.NULL, null);
+	}
+		
 	// queries
 	
 	/**
@@ -77,10 +89,17 @@ class Elem {
 	// getters
 	
 	/**
+	 * Returns the index of this element on the heap, or NULL if not on the heap.
+	 */
+	public int getHeapIndex() {
+		return heapIndex;
+	}
+	
+	/**
 	 * Returns the integer value if this element is not a list, otherwise
 	 * returns null.
 	 */
-	public Integer getValue() {
+	public Integer getInt() {
 		if (!isList)
 			return value;
 		else
@@ -99,27 +118,22 @@ class Elem {
 	}
 	
 	/**
+	 * If this element is a list, return that list's first element, otherwise
+	 * returns null.
+	 */
+	public Elem getList() {
+		if (isList)
+			return heap.elemAt(value);
+		else
+			return null;
+	}
+	
+	/**
 	 * Returns the int value of the element (can be either an integer or a
 	 * list index).
 	 */
 	public int getRawValue() {
 		return value;
-	}
-	
-	@Override
-	public String toString() {
-		if (!isList)
-			return value + "";
-		else {
-			String res = "[";
-			Elem curr = heap.elemAt(value);
-			while (curr != null) {
-				res += curr.toString() + ", ";
-				curr = curr.getNext();
-			}
-			res = res.substring(0,res.length() - 2) + "]";
-			return res;
-		}
 	}
 	
 	/**
@@ -136,6 +150,22 @@ class Elem {
 	 */
 	public int getNextIndex() {
 		return nextIndex;
+	}
+	
+	@Override
+	public String toString() {
+		if (!isList)
+			return value + "";
+		else {
+			String res = "[";
+			Elem curr = heap.elemAt(value);
+			while (curr != null) {
+				res += curr.toString() + ", ";
+				curr = curr.getNext();
+			}
+			res = res.substring(0,res.length() - 2) + "]";
+			return res;
+		}
 	}
 	
 	// setters
@@ -193,7 +223,7 @@ public class Heap {
 	public static final int NULL = -1;
 	
 	// temporary elements to be marked
-	public static LinkedList<Elem> tmpToMark = new LinkedList<>();
+	public LinkedList<Elem> tmpToMark = new LinkedList<>();
 	
 	// heap data
 	private Elem[] data;
@@ -211,7 +241,7 @@ public class Heap {
 		avail = 0;
 		availSize = size;
 		for (int i = 0; i < size; i++) {
-			data[i] = new Elem(0, false, i + 1, this);
+			data[i] = new Elem(0, i, false, i + 1, this);
 		}
 		data[size - 1].setNextIndex(NULL);
 	}
@@ -220,23 +250,26 @@ public class Heap {
 	 * Runs the mark-and-sweep garbage collector and updates the avail pointer
 	 * and available heap size accordingly. 
 	 */
-	private void gc(HashMap<String,Elem> nametable) {
-		mark(nametable);
+	private void gc(Elem car, Elem cdr, HashMap<String,Elem> nametable) {
+		mark(car,cdr,nametable);
 		sweep();
-		clearMarks();
+		clearMarks(car);
 	}
 	
 	/**
 	 * Marks all currently pointed elements and temporary elements still in use
 	 * in the heap recursively.
 	 */
-	private void mark(HashMap<String,Elem> nametable) {
+	private void mark(Elem car, Elem cdr, HashMap<String,Elem> nametable) {
 		Set<Elem> toMark = new HashSet<>();
 		toMark.addAll(nametable.values());
 		toMark.addAll(tmpToMark);
+		toMark.add(car);
+		if (cdr != null)
+			toMark.add(cdr);
 		for (Elem e: toMark) {
 			if (e.isList())
-				data[e.getValue()].mark(); 
+				data[e.getInt()].mark(); 
 		}
 	}
 	
@@ -263,11 +296,13 @@ public class Heap {
 	}
 	
 	/**
-	 * Clears all marks in the heap.
+	 * Clears all marks in the heap, and the car mark (since not yet added to
+	 * the heap).
 	 */
-	private void clearMarks() {
+	private void clearMarks(Elem car) {
 		for (Elem elem: data)
 			elem.unmark();
+		car.unmark();
 	}
 	
 	/**
@@ -280,9 +315,29 @@ public class Heap {
 	 * @param nametable
 	 * @return
 	 */
-	public Elem cons(Elem car, Elem cdr, HashMap<String,Elem> nametable) {
+	public Elem cons(Elem car, Elem cdr, HashMap<String,Elem> nametable)
+			throws RuntimeException {
 		// TODO
-		return null;
+		// make sure to handle cases where cdr is null
+		
+		// call gc if necessary
+		if (availSize == 0)
+			gc(car, cdr, nametable);
+		// if heap full, throw
+		if (availSize == 0)
+			throw new RuntimeException("Heap full, no room for " + car);
+		// add car and change avail accordingly
+		int newAvail = data[avail].getNextIndex();
+		Elem toAdd = new Elem(
+				car.getRawValue(),
+				avail,
+				car.isList(),
+				cdr == null ? NULL : cdr.getHeapIndex(),
+				this);
+		data[avail] = toAdd;
+		avail = newAvail;
+		availSize--;
+		return toAdd;
 	}
 	
 	// getters
@@ -312,11 +367,15 @@ public class Heap {
 	
 	@Override
 	public String toString() {
-		String lines = "---------------------------";
-		String res = "IND | CAR    | l | CDR | m \n" + lines + "\n";
+		String lines = "-----------------------------------";
+		String res =
+				"AVAIL: " + avail + " AVAIL SIZE: " + availSize + "\n" +
+				lines + "\n" +
+				"AVAIL | IND | CAR    | l | CDR | m \n" + lines + "\n";
 		for (int i = 0; i < data.length; i++) {
 			res += String.format(
-					"%03d | %-6d | %s | %03d | %s \n",
+					"  %s  | %03d | %-6d | %s | %03d | %s \n",
+					i == avail ? "->" : "  ",
 					i, data[i].getRawValue(),
 					data[i].isList() ? "*" : " ",
 					data[i].getNextIndex(),
@@ -329,9 +388,42 @@ public class Heap {
 	
 	// for testing
 	public static void main(String[] args) {
-		Heap h = new Heap(15);
-		h.data[7].setNextIndex(NULL);
-		h.data[3].mark();
+		Heap h = new Heap(4);
+		HashMap<String,Elem> nametable = new HashMap<>();
 		System.out.println(h);
+		System.out.println();
+		
+		// add x
+		Elem x = h.cons(Elem.getLocalIntElem(10), null, nametable);
+		nametable.put("x",x);
+		System.out.println(h);
+		System.out.println();
+		
+		// add y
+		Elem y = h.cons(Elem.getLocalIntElem(20), null, nametable);
+		nametable.put("y",y);
+		System.out.println(h);
+		System.out.println();
+		
+		// add z
+		Elem z = h.cons(Elem.getLocalIntElem(30), null, nametable);
+		nametable.put("z",z);
+		System.out.println(h);
+		System.out.println();
+		
+		//add w
+		Elem w = h.cons(Elem.getLocalIntElem(40), null, nametable);
+		nametable.put("w",w);
+		System.out.println(h);
+		System.out.println();
+		
+		System.out.println(nametable);
+		
+		//add u
+		Elem u = h.cons(Elem.getLocalIntElem(50), null, nametable);
+		nametable.put("u",u);
+		System.out.println(h);
+		System.out.println();
+		
 	}
 }
