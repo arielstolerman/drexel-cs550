@@ -139,7 +139,7 @@ class Times extends Expr {
 		Elem e2 = expr2.eval(nametable, functiontable, var);
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("TIMES called on a list: " + e1
-					+ " TIMES " + e2 + " not valid");
+					+ " TIMES " + e2 + " invalid");
 		return Program.HEAP.getLocalIntElem(e1.getInt() * e2.getInt());
 	}
 
@@ -165,7 +165,7 @@ class Plus extends Expr {
 		Elem e2 = expr2.eval(nametable, functiontable, var);
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("PLUS called on a list: " + e1
-					+ " PLUS " + e2 + " not valid");
+					+ " PLUS " + e2 + " invalid");
 		return Program.HEAP.getLocalIntElem(e1.getInt() + e2.getInt());
 	}
 
@@ -191,7 +191,7 @@ class Minus extends Expr {
 		Elem e2 = expr2.eval(nametable, functiontable, var);
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("MINUS called on a list: " + e1
-					+ " MINUS " + e2 + " not valid");
+					+ " MINUS " + e2 + " invalid");
 		return Program.HEAP.getLocalIntElem(e1.getInt() - e2.getInt());
 	}
 
@@ -321,7 +321,7 @@ class Car extends Expr {
 		Elem e = list.eval(nametable, functiontable, var);
 		if (!e.isList()) {
 			throw new RuntimeException("Parameter to CAR not a list: "
-					+ "CAR ( " + e + " )" + " not valid");
+					+ "CAR ( " + e + " )" + " invalid");
 		}
 		Elem car = e.getList();
 		if (car.isList())
@@ -383,7 +383,7 @@ class NullP extends Expr {
 
 		if (!(e.isList())) {
 			throw new RuntimeException("Parameter to NULLP not a list: "
-					+ "NULLP ( " + e + " )" + " not valid");
+					+ "NULLP ( " + e + " )" + " invalid");
 		}
 		return e.getList() == null ?
 				Program.HEAP.getLocalIntElem(1) : Program.HEAP.getLocalIntElem(0);
