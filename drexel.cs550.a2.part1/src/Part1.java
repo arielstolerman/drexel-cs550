@@ -60,8 +60,9 @@ class Element {
 abstract class Expr {
 
 	public abstract Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException;
-	
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException;
+
 	@Override
 	public abstract String toString();
 }
@@ -91,8 +92,8 @@ class Lst extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException
-	{
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		LinkedList<Element> res = new LinkedList<>();
 		for (Expr e : list)
 			res.add(e.eval(nametable, functiontable, var));
@@ -102,7 +103,7 @@ class Lst extends Expr {
 	public List<Expr> getList() {
 		return list;
 	}
-	
+
 	@Override
 	public String toString() {
 		return list.toString();
@@ -121,7 +122,7 @@ class Ident extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return nametable.get(name);
 	}
-	
+
 	@Override
 	public String toString() {
 		return name;
@@ -144,7 +145,7 @@ class Number extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		return new Element(value);
 	}
-	
+
 	@Override
 	public String toString() {
 		return value + "";
@@ -161,17 +162,18 @@ class Times extends Expr {
 	}
 
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		Element e1 = expr1.eval(nametable, functiontable, var);
 		Element e2 = expr2.eval(nametable, functiontable, var);
-		if(e1.isList() || e2.isList())
-		{
-			throw new RuntimeException("TIMES called on a list: " + e1 + " TIMES " + e2 + " not valid");
+		if (e1.isList() || e2.isList()) {
+			throw new RuntimeException("TIMES called on a list: " + e1
+					+ " TIMES " + e2 + " not valid");
 		}
-		
+
 		return new Element(e1.getInt() * e2.getInt());
 	}
-	
+
 	@Override
 	public String toString() {
 		return expr1.toString() + " TIMES " + expr2.toString();
@@ -187,18 +189,19 @@ class Plus extends Expr {
 		expr2 = op2;
 	}
 
-	public Element eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException 
-	{
+	public Element eval(HashMap<String, Element> nametable,
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		Element e1 = expr1.eval(nametable, functiontable, var);
 		Element e2 = expr2.eval(nametable, functiontable, var);
-		if(e1.isList() || e2.isList())
-		{
-			throw new RuntimeException("PLUS called on a list: " + e1 + " PLUS " + e2 + " not valid");
+		if (e1.isList() || e2.isList()) {
+			throw new RuntimeException("PLUS called on a list: " + e1
+					+ " PLUS " + e2 + " not valid");
 		}
-		
+
 		return new Element(e1.getInt() + e2.getInt());
 	}
-	
+
 	@Override
 	public String toString() {
 		return expr1.toString() + " PLUS " + expr2.toString();
@@ -215,17 +218,17 @@ class Minus extends Expr {
 	}
 
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		Element e1 = expr1.eval(nametable, functiontable, var);
 		Element e2 = expr2.eval(nametable, functiontable, var);
-		if(e1.isList() || e2.isList())
-		{
-			throw new RuntimeException("MINUS called on a list: " + e1 + " MINUS " + e2 + " not valid");
+		if (e1.isList() || e2.isList()) {
+			throw new RuntimeException("MINUS called on a list: " + e1
+					+ " MINUS " + e2 + " not valid");
 		}
-		
 		return new Element(e1.getInt() - e2.getInt());
 	}
-	
+
 	@Override
 	public String toString() {
 		return expr1 + " MINUS " + expr2;
@@ -244,15 +247,18 @@ class FunctionCall extends Expr {
 	}
 
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		return functiontable.get(funcid).apply(nametable, functiontable, var,
 				explist);
 	}
-	
+
 	@Override
 	public String toString() {
-		return funcid + " " + explist.getExpressions().toString()
-				.replace("[","( ").replace("]"," )");
+		return funcid
+				+ " "
+				+ explist.getExpressions().toString().replace("[", "( ")
+						.replace("]", " )");
 	}
 }
 
@@ -268,22 +274,22 @@ class Concat extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException 
-	{
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		Element e1 = list1.eval(nametable, functiontable, var);
 		Element e2 = list2.eval(nametable, functiontable, var);
-		
-		if(!e1.isList() || !e2.isList())
-		{
-			throw new RuntimeException("Parameter to CONCAT not a list: " + e1 + " || " + e2 + " not valid");
+
+		if (!e1.isList() || !e2.isList()) {
+			throw new RuntimeException("Parameter to CONCAT not a list: " + e1
+					+ " || " + e2 + " not valid");
 		}
-		
+
 		List<Element> res = new LinkedList<>();
 		res.addAll(e1.getList());
 		res.addAll(e2.getList());
 		return new Element(res);
 	}
-	
+
 	@Override
 	public String toString() {
 		return list1 + " || " + list2;
@@ -302,22 +308,23 @@ class Cons extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException 
-	{
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		Element expElem = exp.eval(nametable, functiontable, var);
 		Element listElem = list.eval(nametable, functiontable, var);
-		
-		if(!listElem.isList())
-		{
-			throw new RuntimeException("First parameter to CONS not a list: " + "CONS ( " + expElem + ", " + listElem + " )" + " not valid");
+
+		if (!listElem.isList()) {
+			throw new RuntimeException("First parameter to CONS not a list: "
+					+ "CONS ( " + expElem + ", " + listElem + " )"
+					+ " not valid");
 		}
-		
+
 		LinkedList<Element> res = new LinkedList<>();
 		res.add(expElem);
 		res.addAll(listElem.getList());
 		return new Element(res);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "CONS ( " + exp + ", " + list + " )";
@@ -334,17 +341,17 @@ class Car extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException 
-	{
-		
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
+
 		Element e = list.eval(nametable, functiontable, var);
-		if(!e.isList())
-		{
-			throw new RuntimeException("Parameter to CAR not a list: " +"CAR ( " + e + " )" + " not valid");
+		if (!e.isList()) {
+			throw new RuntimeException("Parameter to CAR not a list: "
+					+ "CAR ( " + e + " )" + " not valid");
 		}
 		return e.getList().get(0);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "CAR ( " + list + " )";
@@ -361,21 +368,21 @@ class Cdr extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
-		
-		
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
+
 		Element e = list.eval(nametable, functiontable, var);
-		if(!(e.isList()))
-		{
-			throw new RuntimeException("Parameter to CDR not a list: " + "CDR ( " + e + " )" + " not valid");
+		if (!(e.isList())) {
+			throw new RuntimeException("Parameter to CDR not a list: "
+					+ "CDR ( " + e + " )" + " not valid");
 		}
-		
+
 		List<Element> listEval = e.getList();
 		LinkedList<Element> res = new LinkedList<>();
 		res.addAll(listEval.subList(1, listEval.size()));
 		return new Element(res);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "CDR ( " + list + " )";
@@ -392,17 +399,18 @@ class NullP extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
-		
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
+
 		Element e = list.eval(nametable, functiontable, var);
-		
-		if(!(e.isList()))
-		{
-			throw new RuntimeException("Parameter to NULLP not a list: " + "NULLP ( " + e + " )" + " not valid");
+
+		if (!(e.isList())) {
+			throw new RuntimeException("Parameter to NULLP not a list: "
+					+ "NULLP ( " + e + " )" + " not valid");
 		}
 		return e.getList().isEmpty() ? new Element(1) : new Element(0);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "NULLP ( " + list + " )";
@@ -419,11 +427,12 @@ class IntP extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		return exp.eval(nametable, functiontable, var).isInt() ? new Element(1)
 				: new Element(0);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "INTP ( " + exp + " )";
@@ -440,11 +449,12 @@ class ListP extends Expr {
 
 	@Override
 	public Element eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		return exp.eval(nametable, functiontable, var).isList() ? new Element(1)
 				: new Element(0);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "LISTP ( " + exp + " )";
@@ -456,15 +466,12 @@ abstract class Statement {
 	public Statement() {
 	}
 
-	public void eval(HashMap<String, Element> nametable,
+	public abstract void eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
-			throws ReturnValue, RuntimeException {
-	}
-	
+			throws ReturnValue, RuntimeException;
+
 	@Override
-	public String toString() {
-		return "Statement";
-	}
+	public abstract String toString();
 }
 
 // added for 2c
@@ -472,8 +479,9 @@ class DefineStatement extends Statement {
 
 	private String name;
 	private Proc proc;
-	//private ParamList paramlist;
-	//private StatementList statementlist;
+
+	// private ParamList paramlist;
+	// private StatementList statementlist;
 
 	public DefineStatement(String id, Proc process) {
 		name = id;
@@ -486,7 +494,7 @@ class DefineStatement extends Statement {
 		// System.out.println("Adding Process:"+name+" to Functiontable");
 		functable.put(name, proc);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "DEFINE " + name + " " + proc;
@@ -497,16 +505,21 @@ class ReturnStatement extends Statement {
 
 	private Expr expr;
 
-	public ReturnStatement(Expr e) 
-	{
+	public ReturnStatement(Expr e) {
 		expr = e;
 	}
 
-	public void eval(HashMap<String, Element> nametable, HashMap<String, Proc> functiontable, LinkedList var) throws ReturnValue, RuntimeException
-	{
+	public void eval(HashMap<String, Element> nametable,
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws ReturnValue, RuntimeException {
 		throw new ReturnValue(expr.eval(nametable, functiontable, var));
 	}
-	
+
+	@Override
+	public String toString() {
+		return expr.toString();
+	}
+
 }
 
 class AssignStatement extends Statement {
@@ -520,7 +533,8 @@ class AssignStatement extends Statement {
 	}
 
 	public void eval(HashMap<String, Element> nametable,
-			HashMap<String, Proc> functiontable, LinkedList var) throws RuntimeException {
+			HashMap<String, Proc> functiontable, LinkedList var)
+			throws RuntimeException {
 		/* add name to the statementlist of variable names */
 		if (!var.contains(name)) {
 			var.add(name);
@@ -529,8 +543,9 @@ class AssignStatement extends Statement {
 			// evaluated result (which must be an integer
 		}
 		nametable.put(name, expr.eval(nametable, functiontable, var));
+
 	}
-	
+
 	@Override
 	public String toString() {
 		return name + " := " + expr;
@@ -558,14 +573,15 @@ class IfStatement extends Statement {
 			throws RuntimeException {
 		Element cond = expr.eval(nametable, functiontable, var);
 		if (!cond.isInt())
-			throw new RuntimeException("IF condition must be an integer: " +
-					"IF " + cond + " THEN ... invalid");
+			throw new RuntimeException("IF condition must be an integer: "
+					+ "IF " + cond + " THEN ... invalid");
 		if (cond.getInt() > 0) {
 			stmtlist1.eval(nametable, functiontable, var);
 		} else {
 			stmtlist2.eval(nametable, functiontable, var);
 		}
 	}
+
 	@Override
 	public String toString() {
 		return "IF" + expr.toString();
@@ -585,13 +601,20 @@ class WhileStatement extends Statement {
 	public void eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		Element cond = expr.eval(nametable, functiontable, var);
-		if (!cond.isInt())
-			throw new RuntimeException("WHILE condition must be an integer: " +
-					"WHILE " + cond + " DO ... invalid");
-		while (cond.getInt() > 0) {
-			stmtlist.eval(nametable, functiontable, var);
+		Element cond = null;
+		try {
+			while ((cond = expr.eval(nametable, functiontable, var)).getInt() > 0) {
+				stmtlist.eval(nametable, functiontable, var);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("WHILE condition must be an integer: "
+					+ "WHILE " + cond + " DO ... invalid");
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "WHILE " + expr.toString() + " DO " + stmtlist.toString();
 	}
 }
 
@@ -608,14 +631,26 @@ class RepeatStatement extends Statement {
 	public void eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		Element cond = expr.eval(nametable, functiontable, var);
-		if (!cond.isInt())
-			throw new RuntimeException("REPEAT condition must be an integer: " +
-					"... REPEAT " + cond + " invalid");
-		do {
-			sl.eval(nametable, functiontable, var);
-		} while (cond.getInt() > 0);
+		Element cond = null;
+		try {
+			do {
+				cond = expr.eval(nametable, functiontable, var);
+				if (!cond.isInt())
+					throw new RuntimeException(
+							"REPEAT condition must be an integer: "
+									+ "... REPEAT " + cond + " invalid");
+				sl.eval(nametable, functiontable, var);
+				cond = expr.eval(nametable, functiontable, var);
+			} while (cond.getInt() > 0);
+		} catch (Exception e) {
+			throw new RuntimeException("WHILE condition must be an integer: "
+					+ "WHILE " + cond + " DO ... invalid");
+		}
+	}
 
+	@Override
+	public String toString() {
+		return "REPEAT " + expr.toString() + " UNTIL" + sl.toString();
 	}
 }
 
@@ -658,7 +693,7 @@ class ExpressionList {
 	public List<Expr> getExpressions() {
 		return list;
 	}
-	
+
 	@Override
 	public String toString() {
 		return list.toString();
@@ -696,7 +731,6 @@ class StatementList {
 
 		for (Statement stmt : statementlist) {
 			stmt.eval(nametable, functiontable, var);
-
 		}
 	}
 
@@ -708,6 +742,12 @@ class StatementList {
 	public LinkedList<Statement> getStatements() {
 		return statementlist;
 	}
+
+	@Override
+	public String toString() {
+		return statementlist.toString();
+	}
+
 }
 
 class Proc {
@@ -723,7 +763,7 @@ class Proc {
 	public Element apply(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var,
 			ExpressionList expressionlist) throws RuntimeException {
-		// System.out.println("Executing Proceedure");	
+		// System.out.println("Executing Proceedure");
 		HashMap<String, Element> newnametable = new HashMap<String, Element>();
 
 		// bind parameters in new name table
@@ -775,9 +815,9 @@ class Program {
 
 	public void eval(HashMap<String, Element> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		
-			stmtlist.eval(nametable, functiontable, var);
-		
+
+		stmtlist.eval(nametable, functiontable, var);
+
 	}
 
 	public void dump(HashMap<String, Element> nametable,
