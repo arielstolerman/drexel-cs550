@@ -12,44 +12,40 @@
 
 import java_cup.runtime.Symbol;
 %%
-%class Yylex[PART_NUM]
 %cup
-%eofval{ 
-	return new Symbol( sym[PART_NUM].EOF );
-%eofval}
 %%
-";" {return new Symbol(sym[PART_NUM].SEMI); }
-"+" {return new Symbol(sym[PART_NUM].PLUS); }
-"-" {return new Symbol(sym[PART_NUM].MINUS); }
-"*" {return new Symbol(sym[PART_NUM].TIMES); }
-"," {return new Symbol(sym[PART_NUM].COMMA); }
-":=" {return new Symbol(sym[PART_NUM].ASSIGN); }
-"define" {return new Symbol(sym[PART_NUM].DEFINE); }
-"(" {return new Symbol(sym[PART_NUM].LPAREN); }
-")" {return new Symbol(sym[PART_NUM].RPAREN); }
-"[" {return new Symbol(sym[PART_NUM].LBRACKET); }
-"]" {return new Symbol(sym[PART_NUM].RBRACKET); }
-"||" {return new Symbol(sym[PART_NUM].CONCAT); }
-"cons" {return new Symbol(sym[PART_NUM].CONS); }
-"car" {return new Symbol(sym[PART_NUM].CAR); }
-"cdr" {return new Symbol(sym[PART_NUM].CDR); }
-"nullp" {return new Symbol(sym[PART_NUM].NULLP); }
-"intp" {return new Symbol(sym[PART_NUM].INTP); }
-"listp" {return new Symbol(sym[PART_NUM].LISTP); }
-"if" {return new Symbol(sym[PART_NUM].IF); }
-"then" {return new Symbol(sym[PART_NUM].THEN); }
-"else" {return new Symbol(sym[PART_NUM].ELSE); }
-"fi" {return new Symbol(sym[PART_NUM].FI);}
-"while" {return new Symbol(sym[PART_NUM].WHILE); }
-"do" {return new Symbol(sym[PART_NUM].DO); }
-"od" {return new Symbol(sym[PART_NUM].OD); }
-"proc" {return new Symbol(sym[PART_NUM].PROC); }
-"end" {return new Symbol(sym[PART_NUM].END); }
-"repeat" {return new Symbol(sym[PART_NUM].REPEAT); }
-"until" {return new Symbol(sym[PART_NUM].UNTIL); }
-"return" {return new Symbol(sym[PART_NUM].RETURN); }
-[0-9]+ {return new Symbol(sym[PART_NUM].NUMBER, new Integer(yytext())); }
-[a-zA-Z]+ {return new Symbol(sym[PART_NUM].ID, new String(yytext())); }
+";" {return new Symbol(sym.SEMI); }
+"+" {return new Symbol(sym.PLUS); }
+"-" {return new Symbol(sym.MINUS); }
+"*" {return new Symbol(sym.TIMES); }
+"," {return new Symbol(sym.COMMA); }
+":=" {return new Symbol(sym.ASSIGN); }
+"define" {return new Symbol(sym.DEFINE); }
+"(" {return new Symbol(sym.LPAREN); }
+")" {return new Symbol(sym.RPAREN); }
+"[" {return new Symbol(sym.LBRACKET); }
+"]" {return new Symbol(sym.RBRACKET); }
+"||" {return new Symbol(sym.CONCAT); }
+"cons" {return new Symbol(sym.CONS); }
+"car" {return new Symbol(sym.CAR); }
+"cdr" {return new Symbol(sym.CDR); }
+"nullp" {return new Symbol(sym.NULLP); }
+"intp" {return new Symbol(sym.INTP); }
+"listp" {return new Symbol(sym.LISTP); }
+"if" {return new Symbol(sym.IF); }
+"then" {return new Symbol(sym.THEN); }
+"else" {return new Symbol(sym.ELSE); }
+"fi" {return new Symbol(sym.FI);}
+"while" {return new Symbol(sym.WHILE); }
+"do" {return new Symbol(sym.DO); }
+"od" {return new Symbol(sym.OD); }
+"proc" {return new Symbol(sym.PROC); }
+"end" {return new Symbol(sym.END); }
+"repeat" {return new Symbol(sym.REPEAT); }
+"until" {return new Symbol(sym.UNTIL); }
+"return" {return new Symbol(sym.RETURN); }
+[0-9]+ {return new Symbol(sym.NUMBER, new Integer(yytext())); }
+[a-zA-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
 \/\/.*$ {/* ignore comments */}
 [ \t\r\n\f] {/* ignore white space */}
 /*
