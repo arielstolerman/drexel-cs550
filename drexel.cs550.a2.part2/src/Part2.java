@@ -360,11 +360,7 @@ class Cdr extends Expr {
 		if (e.getRawValue() == Heap.NULL)
 			throw new RuntimeException("Cannot call CDR on an empty list: "
 					+ "CDR ( " + e + " ) invalid");
-		Elem cdr = e.getList().getNext();
-		if (cdr.isList())
-			return Program.HEAP.getLocalListElem(cdr.getList());
-		else
-			return Program.HEAP.getLocalIntElem(cdr.getInt());
+		return Program.HEAP.getLocalListElem(e.getList().getNext());
 	}
 
 	@Override
@@ -764,7 +760,7 @@ class Proc {
 
 class Program {
 	// dynamic memory allocation heap
-	public static Heap HEAP = new Heap(5);
+	public static Heap HEAP = new Heap(10);
 
 	private StatementList stmtlist;
 
