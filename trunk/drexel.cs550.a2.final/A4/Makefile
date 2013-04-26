@@ -41,7 +41,7 @@ view-part1 : part1/Part1.java interpreterext.cup interpreterext.flex
 
 # run
 run-part1 : build-part1
-	@java -classpath "./part1/;java-cup-11a.jar" parser
+	@java -classpath "./part1/:java-cup-11a.jar" parser
 
 # build
 build-part1 : part1/Yylex.class part1/parser.class part1/sym.class part1/Part1.class
@@ -62,7 +62,7 @@ view-part2 : part2/Part2.java part2/Heap.java interpreterext.cup interpreterext.
 
 # run
 run-part2 : build-part2
-	@java -classpath "./part2/;java-cup-11a.jar" parser
+	@java -classpath "./part2/:java-cup-11a.jar" parser
 
 # build
 build-part2 : part2/Yylex.class part2/parser.class part2/sym.class part2/Heap.class part2/Part2.class
