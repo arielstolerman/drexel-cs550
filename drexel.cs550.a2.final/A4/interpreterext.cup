@@ -37,7 +37,7 @@ parser code {:
 			InputStream is = System.in;
 			if (args.length == 2 && args[0].equals("-i"))
 				is = new FileInputStream(new File(args[1]));
-			new parser[PART_NUM](new Yylex[PART_NUM](is)).parse();
+			new parser(new Yylex(is)).parse();
 		}
 		catch(RuntimeException ex)
 		{
