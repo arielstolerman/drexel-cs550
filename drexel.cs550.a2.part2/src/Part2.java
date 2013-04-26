@@ -10,9 +10,6 @@
  */
 
 import java.util.*;
-import java.util.jar.Attributes.Name;
-
-import javax.management.RuntimeErrorException;
 
 abstract class Expr {
 
@@ -498,7 +495,11 @@ class ReturnStatement extends Statement {
 			throws ReturnValue, RuntimeException {
 		throw new ReturnValue(expr.eval(nametable, functiontable, var));
 	}
-
+	
+	@Override
+	public String toString() {
+		return "RETURN " + expr.toString();
+	}
 }
 
 class AssignStatement extends Statement {
@@ -579,13 +580,20 @@ class WhileStatement extends Statement {
 	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		Elem cond = expr.eval(nametable, functiontable, var);
-		if (!cond.isInt())
-			throw new RuntimeException("WHILE condition must be an integer: " +
-					"WHILE " + cond + " DO ... invalid");
-		while (cond.getInt() > 0) {
-			stmtlist.eval(nametable, functiontable, var);
+		Elem cond = null;
+		try {
+			while ((cond = expr.eval(nametable, functiontable, var)).getInt() > 0) {
+				stmtlist.eval(nametable, functiontable, var);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("WHILE condition must be an integer: "
+					+ "WHILE " + cond + " DO ... invalid");
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return "WHILE " + expr.toString() + " DO " + stmtlist.toString();
 	}
 }
 
@@ -602,14 +610,20 @@ class RepeatStatement extends Statement {
 	public void eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		Elem cond = expr.eval(nametable, functiontable, var);
-		if (!cond.isInt())
-			throw new RuntimeException("REPEAT condition must be an integer: " +
-					"... REPEAT " + cond + " invalid");
-		do {
-			sl.eval(nametable, functiontable, var);
-		} while (cond.getInt() > 0);
+		Elem cond = null;
+		try {
+			do {
+				sl.eval(nametable, functiontable, var);
+			} while ((cond = expr.eval(nametable, functiontable, var)).getInt() > 0);
+		} catch (Exception e) {
+			throw new RuntimeException("REPEAT condition must be an integer: "
+					+ "REPEAT ... UNTIL " + cond + " invalid");
+		}
+	}
 
+	@Override
+	public String toString() {
+		return "REPEAT " + expr.toString() + " UNTIL" + sl.toString();
 	}
 }
 
@@ -701,6 +715,14 @@ class StatementList {
 	public LinkedList<Statement> getStatements() {
 		return statementlist;
 	}
+	
+	@Override
+	public String toString() {
+		String res = "";
+		for (Statement s: statementlist)
+			res += s + "\n";
+		return res;
+	}
 }
 
 class Proc {
@@ -760,7 +782,7 @@ class Proc {
 
 class Program {
 	// dynamic memory allocation heap
-	public static Heap HEAP = new Heap(10);
+	public static Heap HEAP = new Heap(128);
 
 	private StatementList stmtlist;
 
@@ -789,8 +811,8 @@ class Program {
 				System.out.println("Function: " + name + " defined...");
 			}
 		}
-		System.out.println("Dumping heap:");
-		System.out.println(HEAP.toString(nametable));
+		//System.out.println("Dumping heap:");
+		//System.out.println(HEAP.toString(nametable));
 	}
 }
 
