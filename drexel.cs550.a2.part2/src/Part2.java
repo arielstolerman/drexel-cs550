@@ -10,6 +10,7 @@
  */
 
 import java.util.*;
+import java.util.jar.Attributes.Name;
 
 import javax.management.RuntimeErrorException;
 
@@ -251,24 +252,25 @@ class Concat extends Expr {
 			throw new RuntimeException("First parameter to CONCAT not a list: "
 					+ first + " invalid");
 		LinkedList<Elem> carElems = new LinkedList<>();
-		do {
+		first = first.getList();
+		while (first != null) {
 			carElems.add(first);
 			first = first.getNext();
-		} while (first.hasNext());
-
+		}
+		
 		// evaluate second list and cons all first list elements to it
-		Elem res = list2.eval(nametable, functiontable, var);
-		if (!res.isList())
+		Elem second = list2.eval(nametable, functiontable, var);
+		if (!second.isList())
 			throw new RuntimeException(
-					"Second parameter to CONCAT not a list: " + res
+					"Second parameter to CONCAT not a list: " + second
 							+ " invalid");
+		second = second.getList();
 		Elem toAdd;
 		while (!carElems.isEmpty()) {
 			toAdd = carElems.removeLast();
-			Program.HEAP.cons(toAdd, res, nametable);
-			res = toAdd;
+			second = Program.HEAP.cons(toAdd, second, nametable);
 		}
-		return res;
+		return Program.HEAP.getLocalListElem(second);
 	}
 
 	@Override
@@ -296,7 +298,8 @@ class Cons extends Expr {
 		if (!cdr.isList())
 			throw new RuntimeException("Second parameter to CONS not a list: "
 					+ "CONS ( " + car + ", " + cdr + " )" + " invalid");
-		return Program.HEAP.getLocalListElem(Program.HEAP.cons(car, cdr, nametable));
+		return Program.HEAP.getLocalListElem(
+				Program.HEAP.cons(car, cdr.getList(), nametable));
 	}
 
 	@Override
@@ -389,7 +392,7 @@ class NullP extends Expr {
 			throw new RuntimeException("Parameter to NULLP not a list: "
 					+ "NULLP ( " + e + " )" + " not valid");
 		}
-		return e.getList().getRawValue() == Heap.NULL ?
+		return e.getList() == null ?
 				Program.HEAP.getLocalIntElem(1) : Program.HEAP.getLocalIntElem(0);
 	}
 
@@ -779,8 +782,6 @@ class Program {
 	public void dump(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		// System.out.println(hm.values());
-		System.out.println("Heap:");
-		System.out.println(HEAP);
 		System.out.println("Dumping out all the variables...");
 		if (nametable != null) {
 			for (String name : nametable.keySet()) {
@@ -792,6 +793,8 @@ class Program {
 				System.out.println("Function: " + name + " defined...");
 			}
 		}
+		System.out.println("Dumping heap:");
+		System.out.println(HEAP.toString(nametable));
 	}
 }
 
