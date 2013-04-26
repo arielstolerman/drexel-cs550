@@ -46,6 +46,7 @@ import java_cup.runtime.Symbol;
 "return" {return new Symbol(sym.RETURN); }
 [0-9]+ {return new Symbol(sym.NUMBER, new Integer(yytext())); }
 [a-zA-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
+\/\/.*$ {/* ignore comments */}
 [ \t\r\n\f] {/* ignore white space */}
 /*
  * error handling
