@@ -37,22 +37,6 @@ class Elem {
 		this.nextIndex = nextIndex;
 		this.heap = heap;
 	}
-	
-	// constructors for local int/list elements not on the heap
-	
-	/**
-	 * Creates new local element for an integer value.
-	 */
-	public static Elem getLocalIntElem(int value) {
-		return new Elem(value, Heap.NULL, false, Heap.NULL, null);
-	}
-	
-	/**
-	 * Creates new local element for a list value.
-	 */
-	public static Elem getLocalListElem(Elem elem) {
-		return new Elem(elem.heapIndex, Heap.NULL, true, Heap.NULL, null);
-	}
 		
 	// queries
 	
@@ -158,7 +142,7 @@ class Elem {
 			return value + "";
 		else {
 			String res = "[";
-			Elem curr = heap.elemAt(value);
+			Elem curr = getList();
 			while (curr != null) {
 				res += curr.toString() + ", ";
 				curr = curr.getNext();
@@ -246,6 +230,24 @@ public class Heap {
 		data[size - 1].setNextIndex(NULL);
 	}
 	
+	// constructors for local int/list elements not on the heap
+	
+	/**
+	 * Creates new local element for an integer value, i.e. this element does
+	 * not reside on the heap.
+	 */
+	public Elem getLocalIntElem(int value) {
+		return new Elem(value, Heap.NULL, false, Heap.NULL, this);
+	}
+
+	/**
+	 * Creates new local element for a list value, i.e. this element does not
+	 * reside on the heap.
+	 */
+	public Elem getLocalListElem(Elem elem) {
+		return new Elem(elem.getHeapIndex(), Heap.NULL, true, Heap.NULL, this);
+	}
+	
 	/**
 	 * Runs the mark-and-sweep garbage collector and updates the avail pointer
 	 * and available heap size accordingly. 
@@ -261,16 +263,18 @@ public class Heap {
 	 * in the heap recursively.
 	 */
 	private void mark(Elem car, Elem cdr, HashMap<String,Elem> nametable) {
-		Set<Elem> toMark = new HashSet<>();
-		toMark.addAll(nametable.values());
-		toMark.addAll(tmpToMark);
-		toMark.add(car);
-		if (cdr != null)
-			toMark.add(cdr);
-		for (Elem e: toMark) {
+		// mark referenced lists on the heap
+		for (Elem e: nametable.values())
 			if (e.isList())
-				data[e.getInt()].mark(); 
-		}
+				data[e.getListIndex()].mark();
+		// mark temporary elements on the heap
+		for (Elem e: tmpToMark)
+			e.mark();
+		// mark car (still not referenced)
+		car.mark();
+		// mark cdr (if not null; still not referenced)
+		if (cdr != null)
+			cdr.mark();
 	}
 	
 	/**
@@ -387,43 +391,43 @@ public class Heap {
 	}
 	
 	// for testing
-	public static void main(String[] args) {
-		Heap h = new Heap(4);
-		HashMap<String,Elem> nametable = new HashMap<>();
-		System.out.println(h);
-		System.out.println();
-		
-		// add x
-		Elem x = h.cons(Elem.getLocalIntElem(10), null, nametable);
-		nametable.put("x",x);
-		System.out.println(h);
-		System.out.println();
-		
-		// add y
-		Elem y = h.cons(Elem.getLocalIntElem(20), null, nametable);
-		nametable.put("y",y);
-		System.out.println(h);
-		System.out.println();
-		
-		// add z
-		Elem z = h.cons(Elem.getLocalIntElem(30), null, nametable);
-		nametable.put("z",z);
-		System.out.println(h);
-		System.out.println();
-		
-		//add w
-		Elem w = h.cons(Elem.getLocalIntElem(40), null, nametable);
-		nametable.put("w",w);
-		System.out.println(h);
-		System.out.println();
-		
-		System.out.println(nametable);
-		
-		//add u
-		Elem u = h.cons(Elem.getLocalIntElem(50), null, nametable);
-		nametable.put("u",u);
-		System.out.println(h);
-		System.out.println();
-		
-	}
+//	public static void main(String[] args) {
+//		Heap h = new Heap(4);
+//		HashMap<String,Elem> nametable = new HashMap<>();
+//		System.out.println(h);
+//		System.out.println();
+//		
+//		// add x
+//		Elem x = h.cons(Elem.getLocalIntElem(10), null, nametable);
+//		nametable.put("x",x);
+//		System.out.println(h);
+//		System.out.println();
+//		
+//		// add y
+//		Elem y = h.cons(Elem.getLocalIntElem(20), null, nametable);
+//		nametable.put("y",y);
+//		System.out.println(h);
+//		System.out.println();
+//		
+//		// add z
+//		Elem z = h.cons(Elem.getLocalIntElem(30), null, nametable);
+//		nametable.put("z",z);
+//		System.out.println(h);
+//		System.out.println();
+//		
+//		//add w
+//		Elem w = h.cons(Elem.getLocalIntElem(40), null, nametable);
+//		nametable.put("w",w);
+//		System.out.println(h);
+//		System.out.println();
+//		
+//		System.out.println(nametable);
+//		
+//		//add u
+//		Elem u = h.cons(Elem.getLocalIntElem(50), null, nametable);
+//		nametable.put("u",u);
+//		System.out.println(h);
+//		System.out.println();
+//		
+//	}
 }

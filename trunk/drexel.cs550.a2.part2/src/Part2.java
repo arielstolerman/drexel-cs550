@@ -50,7 +50,7 @@ class Lst extends Expr {
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
-		return Elem.getLocalListElem(buildList(list, nametable, functiontable, var));
+		return Program.HEAP.getLocalListElem(buildList(list, nametable, functiontable, var));
 	}
 
 	public List<Expr> getList() {
@@ -75,9 +75,9 @@ class Lst extends Expr {
 				list.subList(1, list.size()), nametable, functiontable, var);
 
 		// set current cdr to be marked in case of a gc call
-		Program.HEAP.tmpToMark.addFirst(cdr);
+		if (cdr != null) Program.HEAP.tmpToMark.addFirst(cdr);
 		Elem res = Program.HEAP.cons(car, cdr, nametable);
-		Program.HEAP.tmpToMark.removeFirst();
+		if (cdr != null) Program.HEAP.tmpToMark.removeFirst();
 
 		return res;
 	}
@@ -116,7 +116,7 @@ class Number extends Expr {
 
 	public Elem eval(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
-		return Elem.getLocalIntElem(value);
+		return Program.HEAP.getLocalIntElem(value);
 	}
 
 	@Override
@@ -142,7 +142,7 @@ class Times extends Expr {
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("TIMES called on a list: " + e1
 					+ " TIMES " + e2 + " not valid");
-		return Elem.getLocalIntElem(e1.getInt() * e2.getInt());
+		return Program.HEAP.getLocalIntElem(e1.getInt() * e2.getInt());
 	}
 
 	@Override
@@ -168,7 +168,7 @@ class Plus extends Expr {
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("PLUS called on a list: " + e1
 					+ " PLUS " + e2 + " not valid");
-		return Elem.getLocalIntElem(e1.getInt() + e2.getInt());
+		return Program.HEAP.getLocalIntElem(e1.getInt() + e2.getInt());
 	}
 
 	@Override
@@ -194,7 +194,7 @@ class Minus extends Expr {
 		if (e1.isList() || e2.isList())
 			throw new RuntimeException("MINUS called on a list: " + e1
 					+ " MINUS " + e2 + " not valid");
-		return Elem.getLocalIntElem(e1.getInt() - e2.getInt());
+		return Program.HEAP.getLocalIntElem(e1.getInt() - e2.getInt());
 	}
 
 	@Override
@@ -296,7 +296,7 @@ class Cons extends Expr {
 		if (!cdr.isList())
 			throw new RuntimeException("Second parameter to CONS not a list: "
 					+ "CONS ( " + car + ", " + cdr + " )" + " invalid");
-		return Elem.getLocalListElem(Program.HEAP.cons(car, cdr, nametable));
+		return Program.HEAP.getLocalListElem(Program.HEAP.cons(car, cdr, nametable));
 	}
 
 	@Override
@@ -325,9 +325,9 @@ class Car extends Expr {
 		}
 		Elem car = e.getList();
 		if (car.isList())
-			return Elem.getLocalListElem(car.getList());
+			return Program.HEAP.getLocalListElem(car.getList());
 		else
-			return Elem.getLocalIntElem(car.getInt());
+			return Program.HEAP.getLocalIntElem(car.getInt());
 	}
 
 	@Override
@@ -359,9 +359,9 @@ class Cdr extends Expr {
 					+ "CDR ( " + e + " ) invalid");
 		Elem cdr = e.getList().getNext();
 		if (cdr.isList())
-			return Elem.getLocalListElem(cdr.getList());
+			return Program.HEAP.getLocalListElem(cdr.getList());
 		else
-			return Elem.getLocalIntElem(cdr.getInt());
+			return Program.HEAP.getLocalIntElem(cdr.getInt());
 	}
 
 	@Override
@@ -390,7 +390,7 @@ class NullP extends Expr {
 					+ "NULLP ( " + e + " )" + " not valid");
 		}
 		return e.getList().getRawValue() == Heap.NULL ?
-				Elem.getLocalIntElem(1) : Elem.getLocalIntElem(0);
+				Program.HEAP.getLocalIntElem(1) : Program.HEAP.getLocalIntElem(0);
 	}
 
 	@Override
@@ -412,7 +412,7 @@ class IntP extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
 		return exp.eval(nametable, functiontable, var).isInt() ?
-				Elem.getLocalIntElem(1) : Elem.getLocalIntElem(0);
+				Program.HEAP.getLocalIntElem(1) : Program.HEAP.getLocalIntElem(0);
 	}
 
 	@Override
@@ -434,7 +434,7 @@ class ListP extends Expr {
 			HashMap<String, Proc> functiontable, LinkedList var)
 			throws RuntimeException {
 		return exp.eval(nametable, functiontable, var).isList() ?
-				Elem.getLocalIntElem(1) : Elem.getLocalIntElem(0);
+				Program.HEAP.getLocalIntElem(1) : Program.HEAP.getLocalIntElem(0);
 	}
 
 	@Override
@@ -761,7 +761,7 @@ class Proc {
 
 class Program {
 	// dynamic memory allocation heap
-	public static Heap HEAP = new Heap(64);
+	public static Heap HEAP = new Heap(5);
 
 	private StatementList stmtlist;
 
@@ -779,6 +779,8 @@ class Program {
 	public void dump(HashMap<String, Elem> nametable,
 			HashMap<String, Proc> functiontable, LinkedList var) {
 		// System.out.println(hm.values());
+		System.out.println("Heap:");
+		System.out.println(HEAP);
 		System.out.println("Dumping out all the variables...");
 		if (nametable != null) {
 			for (String name : nametable.keySet()) {
