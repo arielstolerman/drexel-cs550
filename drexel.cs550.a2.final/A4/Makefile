@@ -6,49 +6,18 @@ VIEWER=more
 .PHONY : view-part1 build run-part1 view-func1 view-func2 view-part2 run-part2 clean
 
 
-#############
-### build ###
-#############
+######################
+### build (common) ###
+######################
 
 build : build-part1 build-part2
 
-# part 1
+# shared
+Yylex.java : interpreterext.flex
+	@java -jar jflex.jar interpreterext.flex
 
-build-part1 : Yylex1.class parser1.class sym1.class Part1.class
-
-Yylex1.class parser1.class sym1.class Part1.class : Yylex1.java parser1.java sym1.java Part1.java
-	@javac -classpath java-cup-11a.jar Yylex1.java parser1.java sym1.java Part1.java
-
-parser1.java sym1.java : interpreterext1.cup
-	@java -jar java-cup-11a.jar -parser parser1 -symbols sym1 interpreterext1.cup
-
-interpreterext1.cup : interpreterext.cup
-	@sed 's/\[PART_NUM\]/1/g' interpreterext.cup > interpreterext1.cup
-	
-Yylex1.java : interpreterext1.flex
-	@java -jar jflex.jar interpreterext1.flex
-
-interpreterext1.flex : interpreterext.flex
-	@sed 's/\[PART_NUM\]/1/g' interpreterext.flex > interpreterext1.flex
-
-# part 2
-
-build-part1 : Yylex2.class parser2.class sym2.class Part2.class
-
-Yylex2.class parser2.class sym2.class Heap.class Part2.class : Yylex2.java parser2.java sym2.java Part2.java
-	@javac -classpath java-cup-11a.jar Yylex2.java parser2.java sym2.java Heap.java Part2.java
-
-parser2.java sym2.java : interpreterext2.cup
-	@java -jar java-cup-11a.jar -parser parser2 -symbols sym2 interpreterext2.cup
-
-interpreterext2.cup : interpreterext.cup
-	@sed 's/\[PART_NUM\]/2/g' interpreterext.cup > interpreterext2.cup
-
-Yylex2.java : interpreterext2.flex
-	@java -jar jflex.jar interpreterext2.flex
-
-interpreterext2.flex : interpreterext.flex
-	@sed 's/\[PART_NUM\]/2/g' interpreterext.flex > interpreterext2.flex
+parser.java sym.java : interpreterext.cup
+	@java -jar java-cup-11a.jar interpreterext.cup
 
 
 #############################
@@ -67,12 +36,20 @@ view-func2 : listlen_rec.p
 ##############
 
 # view
-view-part1 : Part1.java interpreterext1.cup interpreterext1.flex
-	@$(VIEWER) Part1.java interpreterext1.cup interpreterext1.flex
+view-part1 : part1/Part1.java interpreterext.cup interpreterext.flex
+	@$(VIEWER) part1/Part1.java interpreterext.cup interpreterext.flex
 
 # run
-run-part1 : Yylex1.class parser1.class sym1.class Part1.class
-	@java -classpath ".;java-cup-11a.jar" parser1
+run-part1 : build-part1
+	@java -classpath "./part1/;java-cup-11a.jar" parser
+
+# build
+build-part1 : part1/Yylex.class part1/parser.class part1/sym.class part1/Part1.class
+
+part1/Yylex.class part1/parser.class part1/sym.class part1/Part1.class : Yylex.java parser.java sym.java part1/Part1.java
+	@javac -classpath java-cup-11a.jar -d part1 Yylex.java parser.java sym.java part1/Part1.java
+
+part1/Yylex.java part1/parser.java part1/sym.java : Yylex.java parser.java sym.java
 
 
 ##############
@@ -80,12 +57,20 @@ run-part1 : Yylex1.class parser1.class sym1.class Part1.class
 ##############
 
 # view
-view-part2 : Part2.java Heap.java interpreterext2.cup interpreterext2.flex
-	@$(VIEWER) Part2.java Heap.java interpreterext2.cup interpreterext2.flex
+view-part2 : part2/Part2.java part2/Heap.java interpreterext.cup interpreterext.flex
+	@$(VIEWER) part2/Part2.java part2/Heap.java interpreterext.cup interpreterext.flex
 
 # run
-run-part2 : Yylex2.class parser2.class sym2.class Heap.class Part2.class
-	@java -classpath ".;java-cup-11a.jar" parser2
+run-part2 : build-part2
+	@java -classpath "./part2/;java-cup-11a.jar" parser
+
+# build
+build-part2 : part2/Yylex.class part2/parser.class part2/sym.class part2/Heap.class part2/Part2.class
+
+part2/Yylex.class part2/parser.class part2/sym.class part2/Heap.class part2/Part2.class : Yylex.java parser.java sym.java part2/Heap.java part2/Part2.java
+	@javac -classpath java-cup-11a.jar -d part2 Yylex.java parser.java sym.java part2/Heap.java part2/Part2.java
+
+part2/Yylex.java part2/parser.java part2/sym.java : Yylex.java parser.java sym.java
 
 
 #############
@@ -93,6 +78,5 @@ run-part2 : Yylex2.class parser2.class sym2.class Heap.class Part2.class
 #############
 
 clean :
-	@rm -rf *.class
-	@rm -rf interpreterext1.flex Yylex1.java interpreterext1.cup sym1.java parser1.java
-	@rm -rf interpreterext2.flex Yylex2.java interpreterext2.cup sym2.java parser2.java
+	@rm -rf */*.class
+	@rm -rf Yylex.java sym.java parser.java
