@@ -42,10 +42,12 @@ parser code {:
 		catch(RuntimeException ex)
 		{
 			System.out.println("Runtime Exception: " + ex.getMessage());
+			System.exit(-1);
 		}
 		catch(Exception ex)
 		{
 			System.out.println("Other Exception: " + ex.getMessage());
+			System.exit(-1);
 		}
 	}
 :}
