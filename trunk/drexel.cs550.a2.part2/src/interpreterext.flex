@@ -45,7 +45,7 @@ import java_cup.runtime.Symbol;
 "until" {return new Symbol(sym.UNTIL); }
 "return" {return new Symbol(sym.RETURN); }
 [0-9]+ {return new Symbol(sym.NUMBER, new Integer(yytext())); }
-[a-z,A-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
+[a-zA-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
 [ \t\r\n\f] {/* ignore white space */}
 /*
  * error handling
