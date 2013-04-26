@@ -14,10 +14,10 @@ build : build-part1 build-part2
 
 # shared
 Yylex.java : interpreterext.flex
-	@java -jar jflex.jar interpreterext.flex
+	@java -jar jflex.jar -q interpreterext.flex
 
 parser.java sym.java : interpreterext.cup
-	@java -jar java-cup-11a.jar interpreterext.cup
+	@java -jar java-cup-11a.jar -nosummary interpreterext.cup
 
 
 #############################

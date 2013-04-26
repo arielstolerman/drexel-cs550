@@ -1,0 +1,192 @@
+Building...
+Good tests
+==========
+test/good_simpleloop.p :
+---------------------------------------------------------------------
+i := 10;
+repeat 
+	i := i - 1
+until i;
+
+j := 10;
+while j do 
+	j := j - 1
+od
+---------------------------------------------------------------------
+part1:
+Dumping out all the variables...
+j=0
+i=0
+---------------------------------------------------------------------
+part2:
+Dumping out all the variables...
+j=0
+i=0
+#####################################################################
+
+
+Bad tests
+=========
+test/bad_test_car.p :
+---------------------------------------------------------------------
+x := 1;
+b := car(x)
+---------------------------------------------------------------------
+part1:
+Runtime Exception: Parameter to CAR not a list: CAR ( 1 ) not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: Parameter to CAR not a list: CAR ( 1 ) not valid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_cdr.p :
+---------------------------------------------------------------------
+x := 1;
+b := cdr(x)
+---------------------------------------------------------------------
+part1:
+Runtime Exception: Parameter to CDR not a list: CDR ( 1 ) not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: Parameter to CDR not a list: CDR ( 1 ) invalid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_concat.p :
+---------------------------------------------------------------------
+x := 1;
+y := [1,2,3];
+b := x || y
+---------------------------------------------------------------------
+part1:
+Runtime Exception: Parameter to CONCAT not a list: 1 || [1, 2, 3] not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: First parameter to CONCAT not a list: 1 invalid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_cons1.p :
+---------------------------------------------------------------------
+x := 1;
+y := [1,2,3] ;
+b := cons(y , x)
+---------------------------------------------------------------------
+part1:
+Runtime Exception: First parameter to CONS not a list: CONS ( [1, 2, 3], 1 ) not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: Second parameter to CONS not a list: CONS ( [1, 2, 3], 1 ) invalid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_cons2.p :
+---------------------------------------------------------------------
+x := 1;
+b := cons(x , x)
+---------------------------------------------------------------------
+part1:
+Runtime Exception: First parameter to CONS not a list: CONS ( 1, 1 ) not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: Second parameter to CONS not a list: CONS ( 1, 1 ) invalid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_if.p :
+---------------------------------------------------------------------
+y := [1,2] ;
+if y then
+	x := 4
+else
+	x := 5
+fi
+---------------------------------------------------------------------
+part1:
+Runtime Exception: IF condition must be an integer: IF [1, 2] THEN ... invalid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: IF condition must be an integer: IF [1, 2] THEN ... invalid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_minus.p :
+---------------------------------------------------------------------
+x := [1, 2, 3];
+b := 1 - x
+---------------------------------------------------------------------
+part1:
+Runtime Exception: MINUS called on a list: 1 MINUS [1, 2, 3] not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: MINUS called on a list: 1 MINUS [1, 2, 3] not valid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_plus.p :
+---------------------------------------------------------------------
+x := [1, 2, 3];
+b := 1 + x
+---------------------------------------------------------------------
+part1:
+Runtime Exception: PLUS called on a list: 1 PLUS [1, 2, 3] not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: PLUS called on a list: 1 PLUS [1, 2, 3] not valid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_repeat.p :
+---------------------------------------------------------------------
+y := 10;
+repeat 
+	y := [1,2]
+until y	---------------------------------------------------------------------
+part1:
+Runtime Exception: REPEAT condition must be an integer: REPEAT ... UNTIL [1, 2] invalid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: REPEAT condition must be an integer: REPEAT ... UNTIL [1, 2] invalid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_times.p :
+---------------------------------------------------------------------
+x := [1, 2, 3];
+b := 1 * x
+---------------------------------------------------------------------
+part1:
+Runtime Exception: TIMES called on a list: 1 TIMES [1, 2, 3] not valid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: TIMES called on a list: 1 TIMES [1, 2, 3] not valid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+test/bad_test_while.p :
+---------------------------------------------------------------------
+y := [1,2,3] ;
+while y do
+	x := 2
+od---------------------------------------------------------------------
+part1:
+Runtime Exception: WHILE condition must be an integer: WHILE [1, 2, 3] DO ... invalid
+Makefile:44: recipe for target `run-part1' failed
+---------------------------------------------------------------------
+part2:
+Runtime Exception: WHILE condition must be an integer: WHILE [1, 2, 3] DO ... invalid
+Makefile:65: recipe for target `run-part2' failed
+#####################################################################
+
+Cleaning...
