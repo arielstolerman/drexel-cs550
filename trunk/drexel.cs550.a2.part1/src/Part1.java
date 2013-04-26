@@ -517,7 +517,7 @@ class ReturnStatement extends Statement {
 
 	@Override
 	public String toString() {
-		return expr.toString();
+		return "RETURN " + expr.toString();
 	}
 
 }
@@ -634,17 +634,11 @@ class RepeatStatement extends Statement {
 		Element cond = null;
 		try {
 			do {
-				cond = expr.eval(nametable, functiontable, var);
-				if (!cond.isInt())
-					throw new RuntimeException(
-							"REPEAT condition must be an integer: "
-									+ "... REPEAT " + cond + " invalid");
 				sl.eval(nametable, functiontable, var);
-				cond = expr.eval(nametable, functiontable, var);
-			} while (cond.getInt() > 0);
+			} while ((cond = expr.eval(nametable, functiontable, var)).getInt() > 0);
 		} catch (Exception e) {
-			throw new RuntimeException("WHILE condition must be an integer: "
-					+ "WHILE " + cond + " DO ... invalid");
+			throw new RuntimeException("REPEAT condition must be an integer: "
+					+ "REPEAT ... UNTIL " + cond + " invalid");
 		}
 	}
 
@@ -745,7 +739,10 @@ class StatementList {
 
 	@Override
 	public String toString() {
-		return statementlist.toString();
+		String res = "";
+		for (Statement s: statementlist)
+			res += s + "\n";
+		return res;
 	}
 
 }
