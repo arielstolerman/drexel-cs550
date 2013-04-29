@@ -7,6 +7,7 @@
 
 import java_cup.runtime.*;
 import java.util.*;
+import java.io.*;
 
 action code {:
 	/* code inserted into CUP$actions class
@@ -25,7 +26,18 @@ parser code {:
 
 	/* this part is included in the parser class */
 	public static void main (String args[]) throws Exception{
-		new parser(new Yylex(System.in)).parse();
+		try
+		{
+			InputStream is = System.in;
+			if (args.length == 2 && args[0].equals("-i"))
+				is = new FileInputStream(new File(args[1]));
+			new parser(new Yylex(is)).parse();
+		}
+		catch(Exception ex)
+		{
+			System.out.println("Exception: " + ex.getMessage());
+			System.exit(-1);
+		}
 	}
 :}
 
@@ -53,18 +65,15 @@ statement_list ::= statement:s
 		    {: /* insert a new statement at the end of the existing statement list */
 		       sl.insert(s); RESULT = sl; :};
 
-statement ::= assign_statement:a
+statement ::=
+		assign_statement:a
 	      {: RESULT = a; :}
-            | define_statement:d
-              {: RESULT = d; :}
 	    | if_statement:i
 	      {: RESULT = i; :}
 	    | while_statement:w
 	      {: RESULT = w; :}
-            | return_statement:rs
-              {: RESULT = rs; :}
-            | repeat_statement:r
-              {: RESULT = r; :};
+        | repeat_statement:r
+          {: RESULT = r; :};
 
 assign_statement ::= ID:i ASSIGN expr:e
 		     {: RESULT = new AssignStatement(i,e); 
