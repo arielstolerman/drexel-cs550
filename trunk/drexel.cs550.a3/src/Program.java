@@ -9,6 +9,142 @@
 
 import java.util.*;
 
+import java_cup.symbol;
+
+// =============================================================================
+// added classes and enums
+// =============================================================================
+
+/**
+ * Enum for symbol table entry type
+ */
+enum SymbolType {
+	TEMP,
+	VAR,
+	CONST,
+	LABEL
+}
+
+/**
+ * Class for symbol table entry values, which includes value (can be unknown
+ * before compilation), type and address (unknown before compilation).
+ */
+class SymbolValue {
+	
+	// global counters
+	private static int TEMP_COUNTER = 0;
+	private static int LABEL_COUNTER = 0;
+	
+	// fields
+	Integer value;
+	SymbolType type;
+	Integer addr;
+	
+	/**
+	 * Private constructor from value, type and address.
+	 * @param value
+	 * @param type
+	 * @param addr
+	 */
+	private SymbolValue(Integer value, SymbolType type, Integer addr) {
+		this.value = value;
+		this.type = type;
+		this.addr = addr;
+	}
+	
+	// mapping of constants to names
+	private static String[] CONST_TO_NAME = new String[]{
+		"ZERO",
+		"ONE",
+		"TWO",
+		"THREE",
+		"FOUR",
+		"FIVE",
+		"SIX",
+		"SEVEN",
+		"EIGHT",
+		"NINE",
+	};
+	
+	// factory functions
+	
+	/**
+	 * Adds a new temporary entry to the symbol table, w.r.t the global
+	 * temporary counter.
+	 * @param symbolTable
+	 * @param value
+	 * @return
+	 */
+	public static String addTemp(HashMap<String,SymbolValue> symbolTable) {
+		String name = "T" + TEMP_COUNTER++;
+		symbolTable.put(name, new SymbolValue(null, SymbolType.TEMP, null));
+		return name;
+	}
+	
+	/**
+	 * Adds a new label entry to the symbol table, w.r.t the global label
+	 * counter.
+	 * @param symbolTable
+	 * @param label
+	 * @return
+	 */
+	public static String getLabel(HashMap<String,SymbolValue> symbolTable) {
+		String name = "L" + LABEL_COUNTER++;
+		symbolTable.put(name, new SymbolValue(null, SymbolType.TEMP, null));
+		return name;
+	}
+	
+	/**
+	 * Checks if the given variable name exists in the symbol table, and adds it
+	 * if not. Returns the variable name.
+	 * @param symbolTable
+	 * @param var
+	 * @return
+	 */
+	public static String updateVar(HashMap<String,SymbolValue> symbolTable,
+			String var) {
+		if (!symbolTable.containsKey(var))
+			symbolTable.put(var, new SymbolValue(null, SymbolType.VAR, null));
+		return var;			
+	}
+	
+	/**
+	 * Updates the given symbol table to hold the given const entry, in case it
+	 * does not already contains it. Constant values are given names
+	 * corresponding to their values (e.g. 23 will be named TWO_THREE).
+	 * Returns the name of the symbol table entry key.
+	 * @param symbolTable
+	 * @param value
+	 * @return
+	 */
+	public static String updateConst(HashMap<String,SymbolValue> symbolTable, int value) {
+		// map value to corresponding name
+		String name = "";
+		if (value == 0)
+			name = CONST_TO_NAME[0];
+		else {
+			String valStr = value + "";
+			int len = valStr.length();
+			for (int i = 0; i < len; i++)
+				name += CONST_TO_NAME
+				[Integer.parseInt(valStr.substring(i,i+1))] + "_";
+			name = name.substring(0,name.length() - 1);
+		}
+		
+		// if name does not exist in symbol table, create entry
+		if (!symbolTable.containsKey(name))
+			symbolTable.put(name, new SymbolValue(value, SymbolType.CONST, null));
+		
+		return name;
+	}
+}
+
+abstract class Component {
+	
+}
+
+// =============================================================================
+
 class Expr {
 
 	public Expr() {
