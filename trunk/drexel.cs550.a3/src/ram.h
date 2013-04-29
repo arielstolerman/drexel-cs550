@@ -15,6 +15,7 @@
 #define __RAM_H_
 
 #include <vector>
+#include <string>
 using namespace std;
 
 #include "inst.h"
