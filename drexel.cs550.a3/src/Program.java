@@ -526,18 +526,38 @@ class WhileStatement extends Statement {
 class RepeatStatement extends Statement {
 
 	private Expr expr;
-	private StatementList sl;
+	private StatementList stmtlist;
 
 	public RepeatStatement(StatementList list, Expr e) {
 		expr = e;
-		sl = list;
+		stmtlist = list;
 	}
 	
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable) {
-		// TODO Auto-generated method stub
-		return null;
+		LinkedList<Instruction> res = new LinkedList<>();
+		// L1: code_s
+		String l1 = SymbolValue.addLabel(symbolTable);
+		LinkedList<Instruction> body = stmtlist.translate(symbolTable);
+		body.getFirst().setLabel(l1);
+		res.addAll(body);
+		// code_e
+		LinkedList<Instruction> cond = expr.translate(symbolTable);
+		String t = cond.getLast().arg();
+		res.addAll(cond);
+		// LDA t
+		res.add(new Instruction(InstructionType.LDA, t));
+		// JMN L2
+		String l2 = SymbolValue.addLabel(symbolTable);
+		res.add(new Instruction(InstructionType.JMN, l2));
+		// JMZ L2
+		res.add(new Instruction(InstructionType.JMZ, l2));
+		// JMP L1
+		res.add(new Instruction(InstructionType.JMP, l1));
+		// L2:
+		res.add(new Instruction(l2));
+		return res;
 	}
 }
 
@@ -549,16 +569,7 @@ class StatementList extends Component {
 		statementlist = new LinkedList<Statement>();
 		statementlist.add(statement);
 	}
-
-	// public void eval(HashMap<String, Integer> nametable, LinkedList var)
-	// throws Exception {
-	//
-	// for (Statement stmt : statementlist) {
-	// stmt.eval(nametable, var);
-	//
-	// }
-	// }
-
+	
 	public void insert(Statement s) {
 		// we need to add it to the front of the list
 		statementlist.add(0, s);
