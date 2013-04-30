@@ -665,6 +665,7 @@ class Program {
 			optSymbolTable.put(key, symbolTable.get(key).getCopyNoAddr());
 		
 		// 1) remove redundant sta->lda on the same var
+		//	  leave only the sta command
 		ArrayList<Instruction> insts = new ArrayList<>(opt);
 		int size = insts.size();
 		Instruction curr, next;
@@ -676,8 +677,7 @@ class Program {
 			if (curr.type() == InstructionType.STA &&
 				next.type() == InstructionType.LDA &&
 				curr.arg() == next.arg()) {
-				// remove redundant instructions
-				insts.set(i, null);
+				// remove redundant load instruction
 				insts.set(i + 1, null);
 			}
 		}
