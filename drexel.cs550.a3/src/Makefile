@@ -52,3 +52,4 @@ clean :
 	@rm -rf *.class
 	@rm -rf sym.java parser.java Yylex.java
 	@rm -rf ram ram.exe *.gch
+	@rm -rf trans.txt link.txt op.txt

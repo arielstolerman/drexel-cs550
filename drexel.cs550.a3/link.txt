@@ -1,0 +1,17 @@
+     LDA 2;
+     STA 9;
+     LDA 9;
+     STA 7;
+     LDA 1;
+     STA 8;
+     LDA 8;
+     STA 6;
+     LDA 3;
+     STA 11;
+     LDA 11;
+     STA 4;
+     LDA 0;
+     STA 10;
+     LDA 10;
+     STA 5;
+     HLT;
