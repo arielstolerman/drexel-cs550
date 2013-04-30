@@ -42,8 +42,8 @@ run : build-ram link.txt
 run-op : build-ram op.txt
 	@ram op.txt ???
 
-build-ram : inst.h ram.h ram.cpp main.cpp
-	@g++ inst.h ram.h ram.cpp main.cpp -o ram
+build-ram : ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp
+	@g++ ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp -o ram
 
 
 ### clean ###
