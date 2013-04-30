@@ -307,10 +307,18 @@ abstract class Expr extends Component {
 		res.addAll(code1);
 		// code2 (T2)
 		res.addAll(code2);
-		// LDA T1
-		res.add(new Instruction(InstructionType.LDA, t1));
-		// OP t2
-		res.add(new Instruction(op, t2));
+		// if not a subtraction, switch next commands for possible peephole
+		if (op != InstructionType.SUB) {
+			// LDA T2
+			res.add(new Instruction(InstructionType.LDA, t2));
+			// OP T1
+			res.add(new Instruction(op, t1));
+		} else {
+			// LDA T1
+			res.add(new Instruction(InstructionType.LDA, t1));
+			// OP T2
+			res.add(new Instruction(op, t2));
+		}
 		// ST t3
 		res.add(new Instruction(InstructionType.STA, SymbolValue
 				.addTemp(symbolTable)));
@@ -696,7 +704,11 @@ class Program {
 				iter.remove();
 		opt = new LinkedList<>(insts);
 		
-		// TODO optimize more?
+		// 2) constant folding
+		// skipped!
+		
+		// 3) common subexpression elimination
+		// skipped!
 		
 		// remove unused symbols from symbol table
 		Set<String> used = new HashSet<>();
