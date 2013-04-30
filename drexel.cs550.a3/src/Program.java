@@ -10,8 +10,14 @@
  * 
  * Assignment 3
  * Group 1
+ * 
  */
 
+import java.io.File;
+import java.io.IOError;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.*;
 
 // =============================================================================
@@ -591,7 +597,12 @@ class StatementList extends Component {
 }
 
 class Program {
-
+	
+	// for output files
+	private static String TRANS_PATH = "trans.txt";
+	private static String LINK_PATH = "link.txt";
+	private static String OP_PATH = "op.txt";
+	
 	private StatementList stmtlist;
 	private LinkedList<Instruction> translated;
 	private HashMap<String, SymbolValue> symbolTable;
@@ -603,6 +614,9 @@ class Program {
 	
 	public void translate() {
 		translated = stmtlist.translate(symbolTable);
+		// add halt at end if does not exist
+		if (translated.getLast().type() != InstructionType.HLT)
+			translated.add(new Instruction(InstructionType.HLT, null));
 		// iterate and merge label-only instructions with following instructions
 		Iterator<Instruction> iter = translated.iterator();
 		if (!iter.hasNext())
@@ -622,6 +636,18 @@ class Program {
 			else {
 				prev = curr;
 			}
+		}
+		// write to file
+		try {
+			PrintWriter pw = new PrintWriter(new File(TRANS_PATH));
+			for (Instruction inst: translated)
+				pw.println(inst.toString(symbolTable,false));
+			pw.flush();
+			pw.close();
+		} catch (IOException e) {
+			System.err.println("Exception thrown while writing translated " +
+					"program to file " + TRANS_PATH);
+			System.exit(-1);
 		}
 	}
 
@@ -694,6 +720,18 @@ class Program {
 			case LABEL:
 				// do nothing
 			}
+		}
+		// write to file
+		try {
+			PrintWriter pw = new PrintWriter(new File(LINK_PATH));
+			for (Instruction inst: translated)
+				pw.println(inst.toString(symbolTable,true));
+			pw.flush();
+			pw.close();
+		} catch (IOException e) {
+			System.err.println("Exception thrown while writing linked " +
+					"program to file " + LINK_PATH);
+			System.exit(-1);
 		}
 	}
 	
