@@ -11,13 +11,13 @@ view : Program.java interpreterext.cup interpreterext.flex
 view-trans : trans.txt
 	@cat trans.txt
 
-view-link : link.txt
-	@cat link.txt
+view-link : linked.txt
+	@cat linked.txt
 
-view-op : op.txt
-	@cat op.txt
+view-op : opt_linked.txt
+	@cat opt_linked.txt
 
-view-trans view-link view-op : compile
+trans.txt linked.txt linked_mem.txt opt.txt opt_linked.txt opt_linked_mem.txt : compile
 
 ### compile ###
 
@@ -36,14 +36,15 @@ parser.java sym.java : interpreterext.cup
 
 ### run ###
 
-run : build-ram link.txt
-	@ram link.txt ???
+run : ram.exe linked.txt linked_mem.txt
+	@ram.exe linked.txt linked_mem.txt
 
-run-op : build-ram op.txt
-	@ram op.txt ???
+run-op : build-ram opt_linked.txt opt_linked_mem.txt
+	@ram.exe opt_linked.txt opt_linked_mem.txt
 
-build-ram : ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp
+ram.exe : ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp
 	@g++ ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp -o ram
+	@chmod +x ram.exe
 
 
 ### clean ###
@@ -51,5 +52,5 @@ build-ram : ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp
 clean :
 	@rm -rf *.class
 	@rm -rf sym.java parser.java Yylex.java
-	#@rm -rf ram ram.exe *.gch
-	@rm -rf trans.txt link*.txt op*.txt
+	#@rm -rf ram.exe *.gch
+	@rm -rf trans.txt linked*.txt opt*.txt

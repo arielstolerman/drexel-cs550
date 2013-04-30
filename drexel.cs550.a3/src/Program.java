@@ -67,6 +67,15 @@ class SymbolValue {
 		return addr;
 	}
 	
+	/**
+	 * Returns a copy of this symbol value without the address.
+	 * Used for making fresh copy of symbol table entries for optimized.
+	 */
+	public SymbolValue getCopyNoAddr() {
+		return new SymbolValue(value != null ? value.intValue() : null, type,
+				null);
+	}
+	
 	// setters
 	
 	public void setAddr(int addr) {
@@ -75,10 +84,6 @@ class SymbolValue {
 
 	/**
 	 * Private constructor from value, type and address.
-	 * 
-	 * @param value
-	 * @param type
-	 * @param addr
 	 */
 	private SymbolValue(Integer value, SymbolType type, Integer addr) {
 		this.value = value;
@@ -95,10 +100,6 @@ class SymbolValue {
 	/**
 	 * Adds a new temporary entry to the symbol table, w.r.t the global
 	 * temporary counter.
-	 * 
-	 * @param symbolTable
-	 * @param value
-	 * @return
 	 */
 	public static String addTemp(HashMap<String, SymbolValue> symbolTable) {
 		String name = "T" + TEMP_COUNTER++;
@@ -109,10 +110,6 @@ class SymbolValue {
 	/**
 	 * Adds a new label entry to the symbol table, w.r.t the global label
 	 * counter.
-	 * 
-	 * @param symbolTable
-	 * @param label
-	 * @return
 	 */
 	public static String addLabel(HashMap<String, SymbolValue> symbolTable) {
 		String name = "L" + LABEL_COUNTER++;
@@ -123,10 +120,6 @@ class SymbolValue {
 	/**
 	 * Checks if the given variable name exists in the symbol table, and adds it
 	 * if not. Returns the variable name.
-	 * 
-	 * @param symbolTable
-	 * @param var
-	 * @return
 	 */
 	public static String updateVar(HashMap<String, SymbolValue> symbolTable,
 			String var) {
@@ -140,10 +133,6 @@ class SymbolValue {
 	 * does not already contains it. Constant values are given names
 	 * corresponding to their values (e.g. 23 will be named TWO_THREE). Returns
 	 * the name of the symbol table entry key.
-	 * 
-	 * @param symbolTable
-	 * @param value
-	 * @return
 	 */
 	public static String updateConst(HashMap<String, SymbolValue> symbolTable,
 			int value) {
@@ -189,7 +178,6 @@ class Instruction {
 	
 	/**
 	 * Constructor from label only (for label only rows).
-	 * @param label
 	 */
 	public Instruction(String label) {
 		this.label = label;
@@ -199,9 +187,6 @@ class Instruction {
 	
 	/**
 	 * Constructor from type and argument.
-	 * 
-	 * @param type
-	 * @param arg
 	 */
 	public Instruction(InstructionType type, String arg) {
 		label = null;
@@ -211,22 +196,24 @@ class Instruction {
 
 	/**
 	 * Constructor from type, argument and label.
-	 * 
-	 * @param type
-	 * @param arg
-	 * @param label
 	 */
 	public Instruction(InstructionType type, String arg, String label) {
 		this(type, arg);
 		this.label = label;
 	}
+	
+	/**
+	 * Copy constructor.
+	 */
+	public Instruction(Instruction inst) {
+		arg = inst.arg;
+		label = inst.label;
+		type = inst.type;
+	}
 
 	/**
 	 * Returns the string representation of the instruction. If the linked
 	 * parameter is true, returns the final address as the instruction argument.
-	 * 
-	 * @param linked
-	 * @return
 	 */
 	public String toString(HashMap<String, SymbolValue> symbolTable,
 			boolean linked) {
@@ -245,7 +232,7 @@ class Instruction {
 		}
 		// semicolon
 		if (type != InstructionType.NONE)
-			res += ";";
+			res += " ;";
 		return res;
 	}
 
@@ -294,14 +281,8 @@ abstract class Expr extends Component {
 	/**
 	 * Returns the translation of applying the given binary operator on the
 	 * given expressions.
-	 * 
-	 * @param expr1
-	 * @param expr2
-	 * @param op
-	 * @param symbolTable
-	 * @return
 	 */
-	public static LinkedList<Instruction> getOpInstructions(Expr expr1,
+	public static LinkedList<Instruction> getBinaryOpInsts(Expr expr1,
 			Expr expr2, InstructionType op,
 			HashMap<String, SymbolValue> symbolTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
@@ -386,7 +367,7 @@ class Times extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable) {
-		return getOpInstructions(expr1, expr2, InstructionType.MUL, symbolTable);
+		return getBinaryOpInsts(expr1, expr2, InstructionType.MUL, symbolTable);
 	}
 }
 
@@ -402,7 +383,7 @@ class Plus extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable) {
-		return getOpInstructions(expr1, expr2, InstructionType.ADD, symbolTable);
+		return getBinaryOpInsts(expr1, expr2, InstructionType.ADD, symbolTable);
 	}
 }
 
@@ -418,7 +399,7 @@ class Minus extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable) {
-		return getOpInstructions(expr1, expr2, InstructionType.SUB, symbolTable);
+		return getBinaryOpInsts(expr1, expr2, InstructionType.SUB, symbolTable);
 	}
 }
 
@@ -607,8 +588,9 @@ class Program {
 	
 	// for output files
 	private static String TRANS_PATH = "trans.txt";
-	private static String LINK_PATH = "link.txt";
-	private static String OPT_PATH = "op.txt";
+	private static String TRANS_LINK_PATH = "linked.txt";
+	private static String OPT_PATH = "opt.txt";
+	private static String OPT_LINK_PATH = "opt_linked.txt";
 	
 	private StatementList stmtlist;
 	private LinkedList<Instruction> trans;	// translated
@@ -621,11 +603,26 @@ class Program {
 		symbolTable = new HashMap<>();
 	}
 	
+	// -------------------------------------------------------------------------
+	// compile methods
+	// -------------------------------------------------------------------------
+	
+	/**
+	 * Translates, optimizes and links the code.
+	 */
+	public void compile() {
+		translate();
+		optimize();
+	}
+	
+	/**
+	 * Translates the program to RAL with symbolic representation.
+	 */
 	public void translate() {
 		trans = stmtlist.translate(symbolTable);
 		// add halt at end if does not exist
-		//if (trans.getLast().type() != InstructionType.HLT)
-		//	trans.add(new Instruction(InstructionType.HLT, null));
+		if (trans.getLast().type() != InstructionType.HLT)
+			trans.add(new Instruction(InstructionType.HLT, null));
 		// iterate and merge label-only instructions with following instructions
 		Iterator<Instruction> iter = trans.iterator();
 		if (!iter.hasNext())
@@ -646,102 +643,36 @@ class Program {
 				prev = curr;
 			}
 		}
-	}
-	
-	/**
-	 * Dumps the symbolic translated program to file.
-	 */
-	public void dumpTrans() {
-		if (trans == null)
-			return;
-		try {
-			PrintWriter pw = new PrintWriter(new File(TRANS_PATH));
-			for (Instruction inst: trans)
-				pw.println(inst.toString(symbolTable,false));
-			pw.flush();
-			pw.close();
-		} catch (IOException e) {
-			System.err.println("Exception thrown while writing translated " +
-					"program to file " + TRANS_PATH);
-			System.exit(-1);
-		}
-	}
-	
-	/**
-	 * Dumps symbol table to corresponding mem file.
-	 * Should be used only for linked.
-	 */
-	private void dumpSymbolTable(String path) {
-		path = path.replace(".txt","_mem.txt");
-		SortedMap<Integer,SymbolValue> mem = new TreeMap<>();
-		SymbolValue val;
-		for (String key: symbolTable.keySet()) {
-			val = symbolTable.get(key);
-			mem.put(val.addr(), val);
-		}
-		try {
-			PrintWriter pw = new PrintWriter(new File(path));
-			for (int key: mem.keySet()) {
-				val = mem.get(key);
-				pw.println(key + "\t" +
-						(val.value() == null ? 0 : val.value()) +
-						"; " + val.type());
-			}
-			pw.flush();
-			pw.close();
-		} catch (IOException e) {
-			System.err.println("Exception thrown while writing program memory " +
-					"to file " + path);
-			System.exit(-1);
-		}
+		// link
+		link(symbolTable);
 	}
 
 	/**
 	 * Optimizes the translated set of instructions with peephole optimization. 
 	 */
 	public void optimize() {
-		// TODO
-//		if (translated == null)
-//			return;
-//		Iterator<Instruction> iter = translated.iterator();
-//		if (!iter.hasNext())
-//			return;
-//		// iterate over pairs of consectutive instructions and optimize
-//		// when possible
-//		Instruction prev = iter.next(), curr;
-//		while (iter.hasNext()) {
-//			curr = iter.next();
-//			if (prev.type() == InstructionType.LDA &&
-//				curr.type() == InstructionType.STA &&
-//				prev.arg() == curr.arg())
-//			prev = curr;
-//		}
-	}
-	
-	/**
-	 * Dumps the symbolic translated program to file.
-	 */
-	public void dumpOpt() {
-		if (opt == null)
+		// if not translated yet, return
+		if (trans == null)
 			return;
-		try {
-			PrintWriter pw = new PrintWriter(new File(OPT_PATH));
-			for (Instruction inst: opt)
-				pw.println(inst.toString(symbolTable,true));
-			pw.flush();
-			pw.close();
-		} catch (IOException e) {
-			System.err.println("Exception thrown while writing optimized " +
-					"program to file " + OPT_PATH);
-			System.exit(-1);
-		}
-		dumpSymbolTable(OPT_PATH);
+		
+		// copy translated and symbol table
+		opt = new LinkedList<>();
+		for (Instruction inst: trans)
+			opt.add(new Instruction(inst));
+		optSymbolTable = new HashMap<>();
+		for (String key: symbolTable.keySet())
+			optSymbolTable.put(key, symbolTable.get(key).getCopyNoAddr());
+		
+		// TODO optimize
+		
+		// link
+		link(optSymbolTable);
 	}
 
 	/**
 	 * Links the symbols in the symbol table to hard-coded addresses.
 	 */
-	public void link() {
+	public void link(HashMap<String, SymbolValue> symbolTable) {
 		// iterate over symbols and count consts and vars
 		// update label address to line
 		int line = 0;
@@ -788,32 +719,86 @@ class Program {
 		}
 	}
 	
+	// -------------------------------------------------------------------------
+	// dump to file methods
+	// -------------------------------------------------------------------------
+	
 	/**
-	 * Dumps the linked translated program to file.
+	 * Dumps symbolic, optimized and both linked compiled program to files.
 	 */
-	public void dumpLink() {
-		try {
-			PrintWriter pw = new PrintWriter(new File(LINK_PATH));
-			for (Instruction inst: trans)
-				pw.println(inst.toString(symbolTable,true));
-			pw.flush();
-			pw.close();
-		} catch (IOException e) {
-			System.err.println("Exception thrown while writing linked " +
-					"program to file " + LINK_PATH);
-			System.exit(-1);
-		}
-		dumpSymbolTable(LINK_PATH);
+	public void dump() {
+		// translated (symbolic)
+		dump(TRANS_PATH, trans, symbolTable, false);
+		// translated (linked)
+		dump(TRANS_LINK_PATH, trans, symbolTable, true);
+		// optimized (symbolic)
+		dump(OPT_PATH, opt, optSymbolTable, false);
+		// optimized (linked)
+		dump(OPT_LINK_PATH, opt, optSymbolTable, true);
 	}
 	
 	/**
-	 * Translates, optimizes and links the code.
+	 * Dumps the symbolic translated program to file.
 	 */
-	public void compile() {
-		translate();
-		optimize();
-		link();
+	public void dump(String path, LinkedList<Instruction> insts,
+			HashMap<String,SymbolValue> symbolTable, boolean linked) {
+		if (insts == null)
+			return;
+		// dump instructions to file
+		try {
+			PrintWriter pw = new PrintWriter(new File(path));
+			for (Instruction inst: insts)
+				pw.println(inst.toString(symbolTable,linked));
+			pw.flush();
+			pw.close();
+		} catch (IOException e) {
+			System.err.println("Exception thrown while writing program to " +
+					"file " + path);
+			System.exit(-1);
+		}
+		// if linked, dump initial memory image
+		if (linked)
+			dumpSymbolTable(path, symbolTable);
 	}
+	
+	/**
+	 * Dumps symbol table to corresponding mem file.
+	 * Should be used only for linked.
+	 */
+	private void dumpSymbolTable(String path,
+			HashMap<String,SymbolValue> symbolTable) {
+		path = path.replace(".txt","_mem.txt");
+		SortedMap<Integer,SymbolValue> mem = new TreeMap<>();
+		SymbolValue val;
+		for (String key: symbolTable.keySet()) {
+			val = symbolTable.get(key);
+			if (val.addr() == null) {
+				System.out.println("Warning! address for " + key + " is null " +
+						"while dumping linked RAL memory to file " + path);
+				continue;
+			}
+			mem.put(val.addr(), val);
+		}
+		try {
+			PrintWriter pw = new PrintWriter(new File(path));
+			for (int key: mem.keySet()) {
+				val = mem.get(key);
+				pw.println(key + "\t" +
+						(val.value() == null ? 0 : val.value()) +
+						"; " + val.type());
+			}
+			pw.flush();
+			pw.close();
+		} catch (IOException e) {
+			System.err.println("Exception thrown while writing program memory " +
+					"to file " + path);
+			System.exit(-1);
+		}
+	}
+	
+	// -------------------------------------------------------------------------
+	// print methods
+	// -------------------------------------------------------------------------
 	
 	/**
 	 * Returns the final compiled RAL program.
@@ -830,14 +815,5 @@ class Program {
 		for (Instruction inst: trans)
 			res += inst.toString(symbolTable, linked) + "\n";
 		return res;
-	}
-	
-	/**
-	 * Dumps symbolic, optimized and linked compiled program to files.
-	 */
-	public void dump() {
-		dumpTrans();
-		dumpOpt();
-		dumpLink();
 	}
 }
