@@ -15,6 +15,7 @@
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.Entry;
 
 // =============================================================================
 // added classes and enums
@@ -663,7 +664,40 @@ class Program {
 		for (String key: symbolTable.keySet())
 			optSymbolTable.put(key, symbolTable.get(key).getCopyNoAddr());
 		
-		// TODO optimize
+		// 1) remove redundant sta->lda on the same var
+		ArrayList<Instruction> insts = new ArrayList<>(opt);
+		int size = insts.size();
+		Instruction curr, next;
+		for (int i = 0; i < size - 1; i++) {
+			curr = insts.get(i);
+			next = insts.get(i + 1);
+			if (curr == null)
+				continue;
+			if (curr.type() == InstructionType.STA &&
+				next.type() == InstructionType.LDA &&
+				curr.arg() == next.arg()) {
+				// remove redundant instructions
+				insts.set(i, null);
+				insts.set(i + 1, null);
+			}
+		}
+		for (Iterator<Instruction> iter = insts.iterator(); iter.hasNext();)
+			if (iter.next() == null)
+				iter.remove();
+		opt = new LinkedList<>(insts);
+		
+		// TODO optimize more?
+		
+		// remove unused symbols from symbol table
+		Set<String> used = new HashSet<>();
+		for (Instruction inst: opt)
+			used.add(inst.arg());
+		Set<String> unused = new HashSet<>();
+		for (String key: optSymbolTable.keySet())
+			if (!used.contains(key))
+				unused.add(key);
+		for (String key: unused)
+			optSymbolTable.remove(key);
 		
 		// link
 		link(optSymbolTable);
