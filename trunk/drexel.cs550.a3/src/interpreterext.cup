@@ -36,7 +36,6 @@ terminal String ID;
 
 non terminal Program program;
 non terminal StatementList statement_list;
-non terminal ParamList param_list;
 non terminal Statement statement, assign_statement, if_statement, while_statement, repeat_statement;
 non terminal Expr expr, term, factor;
 

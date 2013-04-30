@@ -21,17 +21,19 @@ trans.txt linked.txt linked_mem.txt opt.txt opt_linked.txt opt_linked_mem.txt : 
 
 ### compile ###
 
-compile : Yylex.class parser.class sym.class Program.class
+compile : build
 	@java -classpath ".;java-cup-11a.jar" parser
+
+build : Yylex.class parser.class sym.class Program.class
 
 Yylex.class parser.class sym.class Program.class : Yylex.java parser.java sym.java Program.java
 	@javac -classpath java-cup-11a.jar Yylex.java parser.java sym.java Program.java
 
 Yylex.java : interpreterext.flex
-	@java -jar jflex.jar interpreterext.flex
+	@java -jar jflex.jar -q interpreterext.flex
 
 parser.java sym.java : interpreterext.cup
-	@java -jar java-cup-11a.jar interpreterext.cup
+	@java -jar java-cup-11a.jar -nosummary -nowarn interpreterext.cup
 
 
 ### run ###
@@ -42,8 +44,8 @@ run : ram.exe linked.txt linked_mem.txt
 run-op : build-ram opt_linked.txt opt_linked_mem.txt
 	@ram.exe opt_linked.txt opt_linked_mem.txt
 
-ram.exe : ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp
-	@g++ ram/inst.h ram/ram.h ram/ram.cpp ram/main.cpp -o ram
+ram.exe : ram_src/inst.h ram_src/ram.h ram_src/ram.cpp ram_src/main.cpp
+	@g++ ram_src/inst.h ram_src/ram.h ram_src/ram.cpp ram_src/main.cpp -o ram
 	@chmod +x ram.exe
 
 
