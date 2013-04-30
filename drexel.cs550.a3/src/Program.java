@@ -52,6 +52,12 @@ class SymbolValue {
 	public Integer addr() {
 		return addr;
 	}
+	
+	// setters
+	
+	public void setAddr(int addr) {
+		this.addr = addr;
+	}
 
 	/**
 	 * Private constructor from value, type and address.
@@ -247,6 +253,14 @@ class Instruction {
 	
 	public void setLabel(String label) {
 		this.label = label;
+	}
+	
+	public void setType(InstructionType type) {
+		this.type = type;
+	}
+	
+	public void setArg(String arg) {
+		this.arg = arg;
 	}
 }
 
@@ -568,42 +582,151 @@ class Program {
 
 	private StatementList stmtlist;
 	private LinkedList<Instruction> translated;
+	private HashMap<String, SymbolValue> symbolTable;
 
 	public Program(StatementList list) {
 		stmtlist = list;
+		symbolTable = new HashMap<>();
 	}
 	
-	public void translate(HashMap<String, SymbolValue> symbolTable) {
+	public void translate() {
 		translated = stmtlist.translate(symbolTable);
+		// iterate and merge label-only instructions with following instructions
+		Iterator<Instruction> iter = translated.iterator();
+		if (!iter.hasNext())
+			return;
+		Instruction prev = iter.next(), curr;
+		while (iter.hasNext()) {
+			curr = iter.next();
+			// if prev is a label-only instruction
+			// and curr has no label, merge
+			if (prev.label() != null && prev.type() == InstructionType.NONE &&
+				curr.label() == null) {
+				prev.setType(curr.type());
+				prev.setArg(curr.arg());
+				iter.remove(); // delete curr from set
+			}
+			// otherwise advance prev
+			else {
+				prev = curr;
+			}
+		}
 	}
 
-	public void compile() {
-		// TODO
-	}
-
+	/**
+	 * Optimizes the translated set of instructions with peephole optimization. 
+	 */
 	public void optimize() {
 		// TODO
+//		if (translated == null)
+//			return;
+//		Iterator<Instruction> iter = translated.iterator();
+//		if (!iter.hasNext())
+//			return;
+//		// iterate over pairs of consectutive instructions and optimize
+//		// when possible
+//		Instruction prev = iter.next(), curr;
+//		while (iter.hasNext()) {
+//			curr = iter.next();
+//			if (prev.type() == InstructionType.LDA &&
+//				curr.type() == InstructionType.STA &&
+//				prev.arg() == curr.arg())
+//			prev = curr;
+//		}
 	}
 
+	/**
+	 * Links the symbols in the symbol table to hard-coded addresses.
+	 */
 	public void link() {
-		// TODO
+		// iterate over symbols and count consts and vars
+		// update label address to line
+		int line = 0;
+		int consts = 0, vars = 0;
+		SymbolValue symVal;
+		for (String key: symbolTable.keySet()) {
+			line++;
+			switch ((symVal = symbolTable.get(key)).type()) {
+			case CONST:
+				consts++;
+				break;
+			case LABEL:
+				symVal.setAddr(line);
+				break;
+			case VAR:
+				vars++;
+				break;
+			case TEMP:
+				// do nothing
+			}
+		}
+		// initialize address counts (consts -> vars -> temps)
+		int constAddr = 0;
+		int varAddr = consts;
+		int tempAddr = consts + vars;
+		// assign addresses
+		for (String key: symbolTable.keySet()) {
+			switch ((symVal = symbolTable.get(key)).type()) {
+			case CONST:
+				symVal.setAddr(constAddr);
+				constAddr++;
+				break;
+			case VAR:
+				symVal.setAddr(varAddr);
+				varAddr++;
+				break;
+			case TEMP:
+				symVal.setAddr(tempAddr);
+				tempAddr++;
+				break;
+			case LABEL:
+				// do nothing
+			}
+		}
 	}
 	
-	public void dump(HashMap<String,SymbolValue> symbolTable) {
+	/**
+	 * Translates, optimizes and links the code.
+	 */
+	public void compile() {
+		translate();
+		optimize();
+		link();
+	}
+	
+	/**
+	 * Returns the final compiled RAL program.
+	 */
+	public String output() {
+		return output(true);
+	}
+	
+	/**
+	 * Returns the compiled RAL program linked or unlinked.
+	 */
+	public String output(boolean linked) {
+		String res = "";
+		for (Instruction inst: translated)
+			res += inst.toString(symbolTable, linked) + "\n";
+		return res;
+	}
+	
+	public void dump() {
 		
-		System.out.println("Dumping instructions:");
-		for (Instruction i: translated)
-			System.out.println(i.toString(symbolTable, false));
+		System.out.println("Dumped output (unlinked):");
+		System.out.println(output(false));
+		System.out.println();
+		
+		System.out.println("Dumped output (linked):");
+		System.out.println(output());
 		System.out.println();
 		
 		System.out.println("Dumping out all the variables...");
 		Integer value;
-		if (symbolTable != null) {
-			for (String name : symbolTable.keySet()) {
-				value = symbolTable.get(name).value();
-				if (value != null)
-					System.out.println(name + "=" + value);
-			}
+		for (String name : symbolTable.keySet()) {
+			value = symbolTable.get(name).value();
+			if (value != null)
+				System.out.println(name + "=" + value);
 		}
 	}
 }
