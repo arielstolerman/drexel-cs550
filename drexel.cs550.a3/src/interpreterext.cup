@@ -10,16 +10,8 @@ import java.util.*;
 import java.io.*;
 
 action code {:
-	/* code inserted into CUP$actions class
-	 * it is used by the code embedded the grammar */
-
-	/* hm is used to store and retrieve values of variables */
-	public HashMap hm = new HashMap();
-	/* var stores the used variable names, this is not necessary
-	 * but helpful to dump all the values at the end */
-	public LinkedList var = new LinkedList();
-        /* ft is used to store and retrieve the functions */
-        public HashMap ft = new HashMap();
+	/* symbol table */
+	public HashMap<String,SymbolValue> symbolTable = new HashMap<>();
 :}
 
 parser code {:
@@ -55,8 +47,8 @@ non terminal Expr expr, term, factor;
 
 program ::= statement_list:list
 	    {: Program program = new Program(list);
-	       program.eval(hm, var);
-	       program.dump(hm, var);
+	       program.translate(symbolTable);
+	       program.dump(symbolTable);
 	     :};
 
 statement_list ::= statement:s
