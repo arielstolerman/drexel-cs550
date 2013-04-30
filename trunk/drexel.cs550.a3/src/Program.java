@@ -13,11 +13,7 @@
  * 
  */
 
-import java.io.File;
-import java.io.IOError;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 
 // =============================================================================
@@ -28,7 +24,18 @@ import java.util.*;
  * Enum for symbol table entry type
  */
 enum SymbolType {
-	TEMP, VAR, CONST, LABEL
+	TEMP("temporary"), VAR("variable"), CONST("constant"), LABEL("label");
+	
+	private SymbolType(String name) {
+		this.name = name;
+	}
+	
+	private String name;
+	
+	@Override
+	public String toString() {
+		return name;
+	}
 }
 
 /**
@@ -39,7 +46,7 @@ class SymbolValue {
 
 	// global counters
 	private static int TEMP_COUNTER = 0;
-	private static int LABEL_COUNTER = 0;
+	private static int LABEL_COUNTER = 1;
 
 	// fields
 	private Integer value;
@@ -601,11 +608,13 @@ class Program {
 	// for output files
 	private static String TRANS_PATH = "trans.txt";
 	private static String LINK_PATH = "link.txt";
-	private static String OP_PATH = "op.txt";
+	private static String OPT_PATH = "op.txt";
 	
 	private StatementList stmtlist;
-	private LinkedList<Instruction> translated;
-	private HashMap<String, SymbolValue> symbolTable;
+	private LinkedList<Instruction> trans;	// translated
+	private LinkedList<Instruction> opt;	// optimized
+	private HashMap<String, SymbolValue> symbolTable;		// translated
+	private HashMap<String, SymbolValue> optSymbolTable;	// optimized
 
 	public Program(StatementList list) {
 		stmtlist = list;
@@ -613,12 +622,12 @@ class Program {
 	}
 	
 	public void translate() {
-		translated = stmtlist.translate(symbolTable);
+		trans = stmtlist.translate(symbolTable);
 		// add halt at end if does not exist
-		if (translated.getLast().type() != InstructionType.HLT)
-			translated.add(new Instruction(InstructionType.HLT, null));
+		//if (trans.getLast().type() != InstructionType.HLT)
+		//	trans.add(new Instruction(InstructionType.HLT, null));
 		// iterate and merge label-only instructions with following instructions
-		Iterator<Instruction> iter = translated.iterator();
+		Iterator<Instruction> iter = trans.iterator();
 		if (!iter.hasNext())
 			return;
 		Instruction prev = iter.next(), curr;
@@ -637,16 +646,52 @@ class Program {
 				prev = curr;
 			}
 		}
-		// write to file
+	}
+	
+	/**
+	 * Dumps the symbolic translated program to file.
+	 */
+	public void dumpTrans() {
+		if (trans == null)
+			return;
 		try {
 			PrintWriter pw = new PrintWriter(new File(TRANS_PATH));
-			for (Instruction inst: translated)
+			for (Instruction inst: trans)
 				pw.println(inst.toString(symbolTable,false));
 			pw.flush();
 			pw.close();
 		} catch (IOException e) {
 			System.err.println("Exception thrown while writing translated " +
 					"program to file " + TRANS_PATH);
+			System.exit(-1);
+		}
+	}
+	
+	/**
+	 * Dumps symbol table to corresponding mem file.
+	 * Should be used only for linked.
+	 */
+	private void dumpSymbolTable(String path) {
+		path = path.replace(".txt","_mem.txt");
+		SortedMap<Integer,SymbolValue> mem = new TreeMap<>();
+		SymbolValue val;
+		for (String key: symbolTable.keySet()) {
+			val = symbolTable.get(key);
+			mem.put(val.addr(), val);
+		}
+		try {
+			PrintWriter pw = new PrintWriter(new File(path));
+			for (int key: mem.keySet()) {
+				val = mem.get(key);
+				pw.println(key + "\t" +
+						(val.value() == null ? 0 : val.value()) +
+						"; " + val.type());
+			}
+			pw.flush();
+			pw.close();
+		} catch (IOException e) {
+			System.err.println("Exception thrown while writing program memory " +
+					"to file " + path);
 			System.exit(-1);
 		}
 	}
@@ -671,6 +716,26 @@ class Program {
 //				prev.arg() == curr.arg())
 //			prev = curr;
 //		}
+	}
+	
+	/**
+	 * Dumps the symbolic translated program to file.
+	 */
+	public void dumpOpt() {
+		if (opt == null)
+			return;
+		try {
+			PrintWriter pw = new PrintWriter(new File(OPT_PATH));
+			for (Instruction inst: opt)
+				pw.println(inst.toString(symbolTable,true));
+			pw.flush();
+			pw.close();
+		} catch (IOException e) {
+			System.err.println("Exception thrown while writing optimized " +
+					"program to file " + OPT_PATH);
+			System.exit(-1);
+		}
+		dumpSymbolTable(OPT_PATH);
 	}
 
 	/**
@@ -699,9 +764,9 @@ class Program {
 			}
 		}
 		// initialize address counts (consts -> vars -> temps)
-		int constAddr = 0;
-		int varAddr = consts;
-		int tempAddr = consts + vars;
+		int constAddr = 1;
+		int varAddr = constAddr + consts;
+		int tempAddr = varAddr + vars;
 		// assign addresses
 		for (String key: symbolTable.keySet()) {
 			switch ((symVal = symbolTable.get(key)).type()) {
@@ -721,10 +786,15 @@ class Program {
 				// do nothing
 			}
 		}
-		// write to file
+	}
+	
+	/**
+	 * Dumps the linked translated program to file.
+	 */
+	public void dumpLink() {
 		try {
 			PrintWriter pw = new PrintWriter(new File(LINK_PATH));
-			for (Instruction inst: translated)
+			for (Instruction inst: trans)
 				pw.println(inst.toString(symbolTable,true));
 			pw.flush();
 			pw.close();
@@ -733,6 +803,7 @@ class Program {
 					"program to file " + LINK_PATH);
 			System.exit(-1);
 		}
+		dumpSymbolTable(LINK_PATH);
 	}
 	
 	/**
@@ -756,27 +827,17 @@ class Program {
 	 */
 	public String output(boolean linked) {
 		String res = "";
-		for (Instruction inst: translated)
+		for (Instruction inst: trans)
 			res += inst.toString(symbolTable, linked) + "\n";
 		return res;
 	}
 	
+	/**
+	 * Dumps symbolic, optimized and linked compiled program to files.
+	 */
 	public void dump() {
-		
-		System.out.println("Dumped output (unlinked):");
-		System.out.println(output(false));
-		System.out.println();
-		
-		System.out.println("Dumped output (linked):");
-		System.out.println(output());
-		System.out.println();
-		
-		System.out.println("Dumping out all the variables...");
-		Integer value;
-		for (String name : symbolTable.keySet()) {
-			value = symbolTable.get(name).value();
-			if (value != null)
-				System.out.println(name + "=" + value);
-		}
+		dumpTrans();
+		dumpOpt();
+		dumpLink();
 	}
 }
