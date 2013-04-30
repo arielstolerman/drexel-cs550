@@ -114,7 +114,7 @@ class SymbolValue {
 	 */
 	public static String addLabel(HashMap<String, SymbolValue> symbolTable) {
 		String name = "L" + LABEL_COUNTER++;
-		symbolTable.put(name, new SymbolValue(null, SymbolType.TEMP, null));
+		symbolTable.put(name, new SymbolValue(null, SymbolType.LABEL, null));
 		return name;
 	}
 
@@ -156,6 +156,11 @@ class SymbolValue {
 					new SymbolValue(value, SymbolType.CONST, null));
 
 		return name;
+	}
+	
+	@Override
+	public String toString() {
+		return "val: " + value + ", type: " + type + ", addr: " + addr;
 	}
 }
 
@@ -219,8 +224,13 @@ class Instruction {
 	public String toString(HashMap<String, SymbolValue> symbolTable,
 			boolean linked) {
 		// add label if exists
-		String res = label == null ? "     " : String.format("%-5s", label
-				+ ":");
+		String res;
+		if (linked) {
+			res = "";
+		} else {
+			res = label == null ? "     " : String.format("%-5s", label
+					+ ":");
+		}
 		// add instruction
 		if (type != InstructionType.NONE)
 			res += type;
@@ -645,7 +655,7 @@ class Program {
 			}
 		}
 		// link
-		link(symbolTable);
+		link(trans,symbolTable);
 	}
 
 	/**
@@ -700,33 +710,39 @@ class Program {
 			optSymbolTable.remove(key);
 		
 		// link
-		link(optSymbolTable);
+		link(opt,optSymbolTable);
 	}
 
 	/**
 	 * Links the symbols in the symbol table to hard-coded addresses.
 	 */
-	public void link(HashMap<String, SymbolValue> symbolTable) {
+	public void link(LinkedList<Instruction> insts, HashMap<String, SymbolValue> symbolTable) {
 		// iterate over symbols and count consts and vars
-		// update label address to line
-		int line = 0;
 		int consts = 0, vars = 0;
 		SymbolValue symVal;
 		for (String key: symbolTable.keySet()) {
-			line++;
 			switch ((symVal = symbolTable.get(key)).type()) {
 			case CONST:
 				consts++;
-				break;
-			case LABEL:
-				symVal.setAddr(line);
 				break;
 			case VAR:
 				vars++;
 				break;
 			case TEMP:
 				// do nothing
+				break;
+			case LABEL:
+				// do nothing
+				break;
 			}
+		}
+		// update label address to line
+		int line = 0;
+		String label;
+		for (Instruction inst: insts) {
+			line++;
+			if ((label = inst.label()) != null)
+				symbolTable.get(label).setAddr(line);
 		}
 		// initialize address counts (consts -> vars -> temps)
 		int constAddr = 1;
@@ -749,6 +765,7 @@ class Program {
 				break;
 			case LABEL:
 				// do nothing
+				break;
 			}
 		}
 	}
@@ -806,6 +823,9 @@ class Program {
 		SymbolValue val;
 		for (String key: symbolTable.keySet()) {
 			val = symbolTable.get(key);
+			// skip labels
+			if (val.type() == SymbolType.LABEL)
+				continue;
 			if (val.addr() == null) {
 				System.out.println("Warning! address for " + key + " is null " +
 						"while dumping linked RAL memory to file " + path);
