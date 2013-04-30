@@ -9,11 +9,6 @@ import java_cup.runtime.*;
 import java.util.*;
 import java.io.*;
 
-action code {:
-	/* symbol table */
-	public HashMap<String,SymbolValue> symbolTable = new HashMap<>();
-:}
-
 parser code {:
 
 	/* this part is included in the parser class */
@@ -47,8 +42,8 @@ non terminal Expr expr, term, factor;
 
 program ::= statement_list:list
 	    {: Program program = new Program(list);
-	       program.translate(symbolTable);
-	       program.dump(symbolTable);
+	       program.compile();
+	       program.dump();
 	     :};
 
 statement_list ::= statement:s

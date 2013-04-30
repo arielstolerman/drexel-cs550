@@ -29,4 +29,5 @@ import java_cup.runtime.Symbol;
 [0-9]+ {return new Symbol(sym.NUMBER, new Integer(yytext())); }
 [a-zA-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
 [ \t\r\n\f] {/* ignore white space */}
+\/\/.*$ {/* ignore comments */}
 . {System.err.println("Illegal character: "+yytext());}
