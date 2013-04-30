@@ -1,17 +1,18 @@
 /* this is the cup file for the mini language
- * at http://www.cs.drexel.edu/~jjohnson/2006-07/winter/cs360/lectures/lec6.html *
+ * at http://www.cs.drexel.edu/~jjohnson/2006-07/winter/cs360/lectures/lec6.html
  * created by Xu, 2/5/07
  * 
  * Modified by Mike Kopack for CS550, 2009 Spring Qtr.
  * Should be at the same level of completeness as the Lecture 2c
  * C++ version.
+ * 
+ * -----------------------------------------------------------------------------
+ * 
+ * Assignment 3
+ * Group 1
  */
 
 import java.util.*;
-
-import org.omg.PortableInterceptor.NON_EXISTENT;
-
-import java_cup.symbol;
 
 // =============================================================================
 // added classes and enums
