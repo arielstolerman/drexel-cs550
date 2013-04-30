@@ -1,0 +1,17 @@
+     LDA ONE_TWO;
+     STA T0;
+     LDA T0;
+     STA x;
+     LDA THREE;
+     STA T1;
+     LDA T1;
+     STA i;
+     LDA ZERO;
+     STA T2;
+     LDA T2;
+     STA s;
+     LDA NINE;
+     STA T3;
+     LDA T3;
+     STA z;
+     HLT;
