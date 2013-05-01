@@ -15,7 +15,6 @@
 
 import java.io.*;
 import java.util.*;
-import java.util.Map.Entry;
 
 // =============================================================================
 // added classes and enums
@@ -50,12 +49,17 @@ class SymbolValue {
 	private static int LABEL_COUNTER = 1;
 
 	// fields
+	private String key;
 	private Integer value;
 	private SymbolType type;
 	private Integer addr;
 
 	// getters
-
+	
+	public String key() {
+		return key;
+	}
+	
 	public Integer value() {
 		return value;
 	}
@@ -73,7 +77,9 @@ class SymbolValue {
 	 * Used for making fresh copy of symbol table entries for optimized.
 	 */
 	public SymbolValue getCopyNoAddr() {
-		return new SymbolValue(value != null ? value.intValue() : null, type,
+		return new SymbolValue(key,
+				value != null ? value.intValue() : null,
+				type,
 				null);
 	}
 	
@@ -86,7 +92,9 @@ class SymbolValue {
 	/**
 	 * Private constructor from value, type and address.
 	 */
-	private SymbolValue(Integer value, SymbolType type, Integer addr) {
+	private SymbolValue(String key, Integer value, SymbolType type,
+			Integer addr) {
+		this.key = key;
 		this.value = value;
 		this.type = type;
 		this.addr = addr;
@@ -104,7 +112,8 @@ class SymbolValue {
 	 */
 	public static String addTemp(HashMap<String, SymbolValue> symbolTable) {
 		String name = "T" + TEMP_COUNTER++;
-		symbolTable.put(name, new SymbolValue(null, SymbolType.TEMP, null));
+		symbolTable.put(name,
+				new SymbolValue(name, null, SymbolType.TEMP, null));
 		return name;
 	}
 
@@ -114,7 +123,8 @@ class SymbolValue {
 	 */
 	public static String addLabel(HashMap<String, SymbolValue> symbolTable) {
 		String name = "L" + LABEL_COUNTER++;
-		symbolTable.put(name, new SymbolValue(null, SymbolType.LABEL, null));
+		symbolTable.put(name,
+				new SymbolValue(name, null, SymbolType.LABEL, null));
 		return name;
 	}
 
@@ -125,7 +135,8 @@ class SymbolValue {
 	public static String updateVar(HashMap<String, SymbolValue> symbolTable,
 			String var) {
 		if (!symbolTable.containsKey(var))
-			symbolTable.put(var, new SymbolValue(null, SymbolType.VAR, null));
+			symbolTable.put(var,
+					new SymbolValue(var, null, SymbolType.VAR, null));
 		return var;
 	}
 
@@ -153,14 +164,15 @@ class SymbolValue {
 		// if name does not exist in symbol table, create entry
 		if (!symbolTable.containsKey(name))
 			symbolTable.put(name,
-					new SymbolValue(value, SymbolType.CONST, null));
+					new SymbolValue(name, value, SymbolType.CONST, null));
 
 		return name;
 	}
 	
 	@Override
 	public String toString() {
-		return "val: " + value + ", type: " + type + ", addr: " + addr;
+		return "key: " + key + ", " + "val: " + value +
+				", type: " + type + ", addr: " + addr;
 	}
 }
 
@@ -851,13 +863,13 @@ class Program {
 				val = mem.get(key);
 				pw.println(key + "\t" +
 						(val.value() == null ? 0 : val.value()) +
-						"; " + val.type());
+						"; " + val.type() + " " + val.key());
 			}
 			pw.flush();
 			pw.close();
 		} catch (IOException e) {
-			System.err.println("Exception thrown while writing program memory " +
-					"to file " + path);
+			System.err.println("Exception thrown while writing program memory "
+					+ "to file " + path);
 			System.exit(-1);
 		}
 	}
