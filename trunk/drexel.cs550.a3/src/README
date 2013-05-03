@@ -3,8 +3,8 @@ Assignment 3
 ############
 Group 1:
 - Ariel Stolerman
-- Bekah Overdorf
 - Sam Snodgrass
+- Bekah Overdorf
 
 
 ### summary ###
@@ -60,75 +60,53 @@ Important added/modified classes and enums:
 ### Build instructions ###
 
 > view
+Displays Program.java and the cup and flex source files.
+(No modification is applied to the cup and flex files)
 
 > compile
+Compiles the input code from stdin and creates:
+- symbolic RAL code in trans.txt
+- linked code and initial memory image in linked.txt and linked_mem.txt,
+  respectively
+- linked code and initial memory image of the optimized version, where
+  peephole optimizations are applied, in opt_linked.txt and opt_linked_mem.txt,
+  respectively
+The linked files above are suitable for running with the RAM simulator.
 
 > view-trans
+CATs the produced symbolic RAL code in trans.txt.
 
 > view-link
+CATs the linked RAL code and its initial memory image from linked.txt and
+linked_mem.txt.
 
 > view-op
+CATs the linked optimized RAL code and its initial memory image from
+opt_linked.txt and opt_linked_mem.txt. 
 
 > run
+Runs the RAM simulator under ~jjohnson/bin/ram on the linked code.
 
 > run-op
+Runs the RAM simulator as above on the linked optimized code.
 
 > clean
-
-
-
-
-
-> make view-part1
-Displays all the source files (including cup and flex input files) for part1.
-
-> make
-Builds the entire project, both part1 and part2 (defined by the 'build' label).
-
-> make run-part1
-Runs the parser for part1.
-
-> make view-func1
-Prints the mini-language implementation of the iterative list-length function.
-
-> make view-func2
-Prints the mini-language implementation of the recursive list-length function.
-
-> make view-part2
-Displays all the source files (including cup and flex input files) for part2.
-The cup and flex files do not differ from part1.
-
-> make run-part2
-Runs the parser for part2.
-
 > make clean
-Cleans all temporary fies generated during the build process.
+Cleans all temporary files generated during the build and compile process.
 
 
 ### Test ###
 
 > test/
 This directory contains (some of the) test cases with which we tested our project.
+The compiled output memory image file contains comments about which address is
+assigned to which variable, temp etc.
+The test files were ran with the RAM simulator, and the results in the memory
+at the end of the process were confirmed as the expected values for the
+corresponding variables.
 Test files:
-- bad_car.p
-- bad_cdr.p
-- bad_concat.p
-- bad_cons1.p
-- bad_cons2.p
-- bad_if.p
-- bad_minus.p
-- bad_plus.p
-- bad_repeat.p
-- bad_times.p
-- bad_while.p
-- good_arith.p
-- good_cons.p
-- good_list_arith.p
-- good_queries.p
-- good_repeat.p
-- good_while.p
-
-> test.csh
-An executable that runs part1 and part2 on all the test cases under test/ and
-outputs the results.
-In order to run, first chmod +x test.csh
+- simple.p
+- test1.p
+- test2.p
+- test3.p
+- test4.p
