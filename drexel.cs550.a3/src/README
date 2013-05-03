@@ -99,6 +99,7 @@ Cleans all temporary files generated during the build and compile process.
 
 > test/
 This directory contains (some of the) test cases with which we tested our project.
+Each test file has an associated folder withe the output files (trans.txt etc.)
 The compiled output memory image file contains comments about which address is
 assigned to which variable, temp etc.
 The test files were ran with the RAM simulator, and the results in the memory
