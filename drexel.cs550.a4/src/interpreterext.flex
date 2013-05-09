@@ -15,6 +15,7 @@ import java_cup.runtime.Symbol;
 "*" {return new Symbol(sym.TIMES); }
 "," {return new Symbol(sym.COMMA); }
 ":=" {return new Symbol(sym.ASSIGN); }
+"define" {return new Symbol(sym.DEFINE); }
 "(" {return new Symbol(sym.LPAREN); }
 ")" {return new Symbol(sym.RPAREN); }
 "if" {return new Symbol(sym.IF); }
@@ -24,8 +25,11 @@ import java_cup.runtime.Symbol;
 "while" {return new Symbol(sym.WHILE); }
 "do" {return new Symbol(sym.DO); }
 "od" {return new Symbol(sym.OD); }
+"proc" {return new Symbol(sym.PROC); }
+"end" {return new Symbol(sym.END); }
 "repeat" {return new Symbol(sym.REPEAT); }
 "until" {return new Symbol(sym.UNTIL); }
+"return" {return new Symbol(sym.RETURN); }
 [0-9]+ {return new Symbol(sym.NUMBER, new Integer(yytext())); }
 [a-zA-Z]+ {return new Symbol(sym.ID, new String(yytext())); }
 [ \t\r\n\f] {/* ignore white space */}
