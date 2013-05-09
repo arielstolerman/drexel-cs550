@@ -294,7 +294,24 @@ class Instruction {
 abstract class Component {
 
 	public abstract LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable);
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable);
+}
+
+/**
+ * Wrapper for statement "return" values
+ */
+class ReturnValue extends RuntimeException {
+
+	private Integer retValue;
+
+	public ReturnValue(Integer retValue) {
+		this.retValue = retValue;
+	}
+
+	public Integer getRetValue() {
+		return retValue;
+	}
 }
 
 // =============================================================================
@@ -307,11 +324,14 @@ abstract class Expr extends Component {
 	 */
 	public static LinkedList<Instruction> getBinaryOpInsts(Expr expr1,
 			Expr expr2, InstructionType op,
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// translate two sub-expressions
-		LinkedList<Instruction> code1 = expr1.translate(symbolTable);
-		LinkedList<Instruction> code2 = expr2.translate(symbolTable);
+		LinkedList<Instruction> code1 = expr1.translate(symbolTable,
+				functionTable);
+		LinkedList<Instruction> code2 = expr2.translate(symbolTable,
+				functionTable);
 		String t1 = code1.getLast().arg();
 		String t2 = code2.getLast().arg();
 		// create final expression
@@ -348,7 +368,8 @@ class Ident extends Expr {
 
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA IDENT
 		res.add(new Instruction(InstructionType.LDA, SymbolValue.updateVar(
@@ -374,7 +395,8 @@ class Number extends Expr {
 
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA NUMBER
 		res.add(new Instruction(InstructionType.LDA, SymbolValue.updateConst(
@@ -397,8 +419,10 @@ class Times extends Expr {
 
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
-		return getBinaryOpInsts(expr1, expr2, InstructionType.MUL, symbolTable);
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
+		return getBinaryOpInsts(expr1, expr2, InstructionType.MUL, symbolTable,
+				functionTable);
 	}
 }
 
@@ -413,8 +437,10 @@ class Plus extends Expr {
 
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
-		return getBinaryOpInsts(expr1, expr2, InstructionType.ADD, symbolTable);
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
+		return getBinaryOpInsts(expr1, expr2, InstructionType.ADD, symbolTable,
+				functionTable);
 	}
 }
 
@@ -429,12 +455,90 @@ class Minus extends Expr {
 
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
-		return getBinaryOpInsts(expr1, expr2, InstructionType.SUB, symbolTable);
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
+		return getBinaryOpInsts(expr1, expr2, InstructionType.SUB, symbolTable,
+				functionTable);
 	}
 }
 
+class FunctionCall extends Expr {
+
+    private String funcid;
+    private ExpressionList explist;
+
+    public FunctionCall(String id, ExpressionList el) {
+        funcid = id;
+        explist = el;
+    }
+
+//    public Integer eval(HashMap<String, Integer> nametable, HashMap<String, Proc> functiontable, LinkedList var) {
+//        return functiontable.get(funcid).apply(nametable, functiontable, var, explist);
+//    }
+
+	@Override
+	public LinkedList<Instruction> translate(
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+
+
 abstract class Statement extends Component {
+}
+
+class DefineStatement extends Statement {
+
+	private String name;
+	private Proc proc;
+
+	// private ParamList paramlist;
+	// private StatementList statementlist;
+
+	public DefineStatement(String id, Proc process) {
+		name = id;
+		proc = process;
+	}
+
+//	public void eval(HashMap<String, Element> nametable,
+//			HashMap<String, Proc> functable, LinkedList var) {
+//		// get the named proc object from the function table.
+//		// System.out.println("Adding Process:"+name+" to Functiontable");
+//		functable.put(name, proc);
+//	}
+
+	@Override
+	public LinkedList<Instruction> translate(
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+
+class ReturnStatement extends Statement {
+
+	private Expr expr;
+
+	public ReturnStatement(Expr e) {
+		expr = e;
+	}
+
+	@Override
+	public LinkedList<Instruction> translate(
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+//	public void eval(HashMap<String, Element> nametable,
+//			HashMap<String, Proc> functiontable, LinkedList var)
+//			throws ReturnValue, RuntimeException {
+//		throw new ReturnValue(expr.eval(nametable, functiontable, var));
+//	}
 }
 
 class AssignStatement extends Statement {
@@ -449,9 +553,11 @@ class AssignStatement extends Statement {
 	
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
-		LinkedList<Instruction> exprCode = expr.translate(symbolTable);
+		LinkedList<Instruction> exprCode = expr.translate(symbolTable,
+				functionTable);
 		String t = exprCode.getLast().arg();
 		// expr code
 		res.addAll(exprCode);
@@ -482,10 +588,11 @@ class IfStatement extends Statement {
 	
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// code_e
-		LinkedList<Instruction> cond = expr.translate(symbolTable);
+		LinkedList<Instruction> cond = expr.translate(symbolTable,functionTable);
 		String t = cond.getLast().arg();
 		res.addAll(cond);
 		// LDA t
@@ -496,13 +603,15 @@ class IfStatement extends Statement {
 		// JMZ L1
 		res.add(new Instruction(InstructionType.JMZ, l1));
 		// code1
-		LinkedList<Instruction> code1 = stmtlist1.translate(symbolTable);
+		LinkedList<Instruction> code1 = stmtlist1.translate(symbolTable,
+				functionTable);
 		res.addAll(code1);
 		// JMP L2
 		String l2 = SymbolValue.addLabel(symbolTable);
 		res.add(new Instruction(InstructionType.JMP, l2));
 		// L1: code2
-		LinkedList<Instruction> code2 = stmtlist2.translate(symbolTable);
+		LinkedList<Instruction> code2 = stmtlist2.translate(symbolTable,
+				functionTable);
 		code2.getFirst().setLabel(l1);
 		res.addAll(code2);
 		// L2:
@@ -523,11 +632,13 @@ class WhileStatement extends Statement {
 	
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// L1: code_e
 		String l1 = SymbolValue.addLabel(symbolTable);
-		LinkedList<Instruction> cond = expr.translate(symbolTable);
+		LinkedList<Instruction> cond = expr.translate(symbolTable,
+				functionTable);
 		cond.getFirst().setLabel(l1);
 		String t = cond.getLast().arg();
 		res.addAll(cond);
@@ -539,7 +650,8 @@ class WhileStatement extends Statement {
 		// JMZ L2
 		res.add(new Instruction(InstructionType.JMZ, l2));
 		// code_s
-		LinkedList<Instruction> body = stmtlist.translate(symbolTable);
+		LinkedList<Instruction> body = stmtlist.translate(symbolTable,
+				functionTable);
 		res.addAll(body);
 		// JMP L1
 		res.add(new Instruction(InstructionType.JMP, l1));
@@ -561,15 +673,18 @@ class RepeatStatement extends Statement {
 	
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// L1: code_s
 		String l1 = SymbolValue.addLabel(symbolTable);
-		LinkedList<Instruction> body = stmtlist.translate(symbolTable);
+		LinkedList<Instruction> body = stmtlist.translate(symbolTable,
+				functionTable);
 		body.getFirst().setLabel(l1);
 		res.addAll(body);
 		// code_e
-		LinkedList<Instruction> cond = expr.translate(symbolTable);
+		LinkedList<Instruction> cond = expr.translate(symbolTable,
+				functionTable);
 		String t = cond.getLast().arg();
 		res.addAll(cond);
 		// LDA t
@@ -584,6 +699,50 @@ class RepeatStatement extends Statement {
 		// L2:
 		res.add(new Instruction(l2));
 		return res;
+	}
+}
+
+class ParamList {
+
+	private List<String> parameterlist;
+
+	public ParamList(String name) {
+		parameterlist = new LinkedList<String>();
+		parameterlist.add(name);
+	}
+
+	public ParamList(String name, ParamList parlist) {
+		parameterlist = parlist.getParamList();
+		parameterlist.add(name);
+	}
+
+	public List<String> getParamList() {
+		return parameterlist;
+	}
+}
+
+class ExpressionList {
+
+	private LinkedList<Expr> list;
+
+	public ExpressionList(Expr ex) {
+		list = new LinkedList<Expr>();
+		list.add(ex);
+	}
+
+	public ExpressionList(Expr ex, ExpressionList el) {
+		list = new LinkedList<Expr>();
+		list.add(ex);
+		list.addAll(el.getExpressions());
+	}
+
+	public List<Expr> getExpressions() {
+		return list;
+	}
+
+	@Override
+	public String toString() {
+		return list.toString();
 	}
 }
 
@@ -607,11 +766,67 @@ class StatementList extends Component {
 
 	@Override
 	public LinkedList<Instruction> translate(
-			HashMap<String, SymbolValue> symbolTable) {
+			HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		for (Statement stmt : statementlist)
-			res.addAll(stmt.translate(symbolTable));
+			res.addAll(stmt.translate(symbolTable,functionTable));
 		return res;
+	}
+}
+
+class Proc {
+
+	private ParamList parameterlist;
+	private StatementList stmtlist;
+
+	public Proc(ParamList pl, StatementList sl) {
+		parameterlist = pl;
+		stmtlist = sl;
+	}
+
+	public Integer apply(HashMap<String, SymbolValue> symbolTable,
+			HashMap<String, Proc> functiontable,
+			ExpressionList expressionlist) throws RuntimeException {
+		//TODO
+//		HashMap<String, SymbolValue> newSymbolTable = new HashMap<String, SymbolValue>();
+//
+//		// bind parameters in new name table
+//		// we need to get the underlying List structure that the ParamList
+//		// uses...
+//		Iterator<String> p = parameterlist.getParamList().iterator();
+//		Iterator<Expr> e = expressionlist.getExpressions().iterator();
+//
+//		if (parameterlist.getParamList().size() != expressionlist
+//				.getExpressions().size()) {
+//			System.out.println("Param count does not match");
+//			System.exit(1);
+//		}
+//		while (p.hasNext() && e.hasNext()) {
+//
+//			// assign the evaluation of the expression to the parameter name.
+//			newSymbolTable.put(p.next(),
+//					e.next().eval(symbolTable, functiontable));
+//			// System.out.println("Loading Nametable for procedure with: "+p+" = "+nametable.get(p));
+//
+//		}
+//		// evaluate function body using new name table and
+//		// old function table
+//		// eval statement list and catch return
+//		// System.out.println("Beginning Proceedure Execution..");
+//		try {
+//			stmtlist.eval(newSymbolTable, functiontable, var);
+//		} catch (ReturnValue result) {
+//			// Note, the result shold contain the proceedure's return value as a
+//			// String
+//			// System.out.println("return value = "+result.getMessage());
+//			return result.getRetValue();
+//		}
+//		System.out.println("Error:  no return value");
+//		System.exit(1);
+//		// need this or the compiler will complain, but should never
+//		// reach this...
+		return null;
 	}
 }
 
@@ -628,6 +843,7 @@ class Program {
 	private LinkedList<Instruction> opt;	// optimized
 	private HashMap<String, SymbolValue> symbolTable;		// translated
 	private HashMap<String, SymbolValue> optSymbolTable;	// optimized
+	private HashMap<String, Proc> functionTable;
 
 	public Program(StatementList list) {
 		stmtlist = list;
@@ -650,7 +866,7 @@ class Program {
 	 * Translates the program to RAL with symbolic representation.
 	 */
 	public void translate() {
-		trans = stmtlist.translate(symbolTable);
+		trans = stmtlist.translate(symbolTable, functionTable);
 		// add halt at end if does not exist
 		if (trans.getLast().type() != InstructionType.HLT)
 			trans.add(new Instruction(InstructionType.HLT, null));
