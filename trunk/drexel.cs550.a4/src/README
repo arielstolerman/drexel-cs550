@@ -1,0 +1,113 @@
+Drexel CS550
+Assignment 3
+############
+Group 1:
+- Ariel Stolerman
+- Sam Snodgrass
+- Bekah Overdorf
+
+
+### summary ###
+
+A compiler for the mini-language (does not support lists or functions).
+
+
+### Files and Descriptions ###
+
+> Makefile
+The Makefile utility file for viewing, building and running the code.
+
+> java-cup-11a.jar
+Java CUP library
+
+> jflex-1.4.3.jar
+Java JFlex library
+
+> interpretertext.cup
+The CUP grammar definition input file, produces parser.java and sym.java.
+Defines the parser grammar.
+
+> interpretertext.flex
+The JFlex tokenizer input file, produces Yylex.java.
+
+> Program.java
+Includes all classes for the mini-language parser AST construction and
+compilation functionality.
+Important added/modified classes and enums:
+- SymbolType: enum for defining a type of value in the symbol table: constant,
+  temporary, variable or a label
+- SymbolValue: class for a value entry in the symbol table. Includes the
+  type, value (may be null) and address (may be null)
+- InstructionType: enum for different RAL instructions (LDA, STA etc.)
+- Instruction: class for a RAL instruction, constructed of optional label,
+  instruction and argument
+- Component: an abstract class extended by Expr, Statement and StatementList
+  to impose implementation of a translate method
+- Program:
+  The Program class is modified to provide several sets of methods:
+  1) compile methods: includes the translate and optimize methods, both called
+     by the compile method (two copies of translated instructions and symbol
+     table are maintained - non-optimized and optimized).
+     The translate and optimize methods also call link, which sets the address
+     field of each symbol in the symbol table.
+  2) dump to file methods: allow dumping the instructions (optimized or not)
+     to files, either in a symbolic or linked representation.
+     Linked representation will create the corresponding memory files.
+  3) output methods: same as the dump methods, only output to the standard
+     output.
+
+
+### Build instructions ###
+
+> view
+Displays Program.java and the cup and flex source files.
+(No modification is applied to the cup and flex files)
+
+> compile
+Compiles the input code from stdin and creates:
+- symbolic RAL code in trans.txt
+- linked code and initial memory image in linked.txt and linked_mem.txt,
+  respectively
+- linked code and initial memory image of the optimized version, where
+  peephole optimizations are applied, in opt_linked.txt and opt_linked_mem.txt,
+  respectively
+The linked files above are suitable for running with the RAM simulator.
+
+> view-trans
+CATs the produced symbolic RAL code in trans.txt.
+
+> view-link
+CATs the linked RAL code and its initial memory image from linked.txt and
+linked_mem.txt.
+
+> view-op
+CATs the linked optimized RAL code and its initial memory image from
+opt_linked.txt and opt_linked_mem.txt. 
+
+> run
+Runs the RAM simulator under ~jjohnson/bin/ram on the linked code.
+
+> run-op
+Runs the RAM simulator as above on the linked optimized code.
+
+> clean
+> make clean
+Cleans all temporary files generated during the build and compile process.
+
+
+### Test ###
+
+> test/
+This directory contains (some of the) test cases with which we tested our project.
+Each test file has an associated folder withe the output files (trans.txt etc.)
+The compiled output memory image file contains comments about which address is
+assigned to which variable, temp etc.
+The test files were ran with the RAM simulator, and the results in the memory
+at the end of the process were confirmed as the expected values for the
+corresponding variables.
+Test files:
+- simple.p
+- test1.p
+- test2.p
+- test3.p
+- test4.p
