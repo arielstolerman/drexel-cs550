@@ -1,9 +1,9 @@
-# Assignment 3
+# Assignment 4
 # Group 1
 
-RAM=~jjohnson/bin/ram
+RAM=ram.exe
 
-.PHONY : view compile view-trans view-link view-op run run-op clean
+.PHONY : view compile view-trans view-link run clean
 
 ### view ###
 
@@ -24,21 +24,11 @@ view-link : linked.txt linked_mem.txt
 	@cat linked.txt
 	@echo
 
-view-op : opt_linked.txt opt_linked_mem.txt
-	@echo ===  opt_linked_mem.txt ===
-	@cat  opt_linked_mem.txt
-	@echo
-	@echo
-	@echo ===  opt_linked.txt ===
-	@cat  opt_linked.txt
-	@echo
-
-#trans.txt linked.txt linked_mem.txt opt.txt opt_linked.txt opt_linked_mem.txt : compile
 
 ### compile ###
 
 compile : build
-	@java -classpath ".:java-cup-11a.jar" parser
+	@java -classpath ".;java-cup-11a.jar" parser
 
 build : Yylex.class parser.class sym.class Program.class
 
@@ -57,13 +47,10 @@ parser.java sym.java : interpreterext.cup
 run : linked.txt linked_mem.txt
 	@$(RAM) linked.txt linked_mem.txt
 
-run-op : opt_linked.txt opt_linked_mem.txt
-	@$(RAM) opt_linked.txt opt_linked_mem.txt
-
 
 ### clean ###
 
 clean :
 	@rm -rf *.class
 	@rm -rf sym.java parser.java Yylex.java
-	@rm -rf trans.txt linked*.txt opt*.txt
+	@rm -rf trans.txt linked*.txt

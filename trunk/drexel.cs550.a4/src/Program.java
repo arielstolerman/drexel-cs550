@@ -486,8 +486,7 @@ class FunctionCall extends Expr {
 }
 
 
-abstract class Statement extends Component {
-}
+abstract class Statement extends Component {}
 
 class DefineStatement extends Statement {
 
@@ -835,14 +834,10 @@ class Program {
 	// for output files
 	private static String TRANS_PATH = "trans.txt";
 	private static String TRANS_LINK_PATH = "linked.txt";
-	private static String OPT_PATH = "opt.txt";
-	private static String OPT_LINK_PATH = "opt_linked.txt";
 	
 	private StatementList stmtlist;
-	private LinkedList<Instruction> trans;	// translated
-	private LinkedList<Instruction> opt;	// optimized
-	private HashMap<String, SymbolValue> symbolTable;		// translated
-	private HashMap<String, SymbolValue> optSymbolTable;	// optimized
+	private LinkedList<Instruction> trans;
+	private HashMap<String, SymbolValue> symbolTable;
 	private HashMap<String, Proc> functionTable;
 
 	public Program(StatementList list) {
@@ -859,7 +854,7 @@ class Program {
 	 */
 	public void compile() {
 		translate();
-		optimize();
+		link();
 	}
 	
 	/**
@@ -890,73 +885,12 @@ class Program {
 				prev = curr;
 			}
 		}
-		// link
-		link(trans,symbolTable);
 	}
-
-	/**
-	 * Optimizes the translated set of instructions with peephole optimization. 
-	 */
-	public void optimize() {
-		// if not translated yet, return
-		if (trans == null)
-			return;
-		
-		// copy translated and symbol table
-		opt = new LinkedList<>();
-		for (Instruction inst: trans)
-			opt.add(new Instruction(inst));
-		optSymbolTable = new HashMap<>();
-		for (String key: symbolTable.keySet())
-			optSymbolTable.put(key, symbolTable.get(key).getCopyNoAddr());
-		
-		// 1) remove redundant sta->lda on the same var
-		//	  leave only the sta command
-		ArrayList<Instruction> insts = new ArrayList<>(opt);
-		int size = insts.size();
-		Instruction curr, next;
-		for (int i = 0; i < size - 1; i++) {
-			curr = insts.get(i);
-			next = insts.get(i + 1);
-			if (curr == null)
-				continue;
-			if (curr.type() == InstructionType.STA &&
-				next.type() == InstructionType.LDA &&
-				curr.arg() == next.arg()) {
-				// remove redundant load instruction
-				insts.set(i + 1, null);
-			}
-		}
-		for (Iterator<Instruction> iter = insts.iterator(); iter.hasNext();)
-			if (iter.next() == null)
-				iter.remove();
-		opt = new LinkedList<>(insts);
-		
-		// 2) constant folding
-		// skipped!
-		
-		// 3) common subexpression elimination
-		// skipped!
-		
-		// remove unused symbols from symbol table
-		Set<String> used = new HashSet<>();
-		for (Instruction inst: opt)
-			used.add(inst.arg());
-		Set<String> unused = new HashSet<>();
-		for (String key: optSymbolTable.keySet())
-			if (!used.contains(key))
-				unused.add(key);
-		for (String key: unused)
-			optSymbolTable.remove(key);
-		
-		// link
-		link(opt,optSymbolTable);
-	}
-
+	
 	/**
 	 * Links the symbols in the symbol table to hard-coded addresses.
 	 */
-	public void link(LinkedList<Instruction> insts, HashMap<String, SymbolValue> symbolTable) {
+	public void link() {
 		// iterate over symbols and count consts and vars
 		int consts = 0, vars = 0;
 		SymbolValue symVal;
@@ -979,7 +913,7 @@ class Program {
 		// update label address to line
 		int line = 0;
 		String label;
-		for (Instruction inst: insts) {
+		for (Instruction inst: trans) {
 			line++;
 			if ((label = inst.label()) != null)
 				symbolTable.get(label).setAddr(line);
@@ -1022,10 +956,6 @@ class Program {
 		dump(TRANS_PATH, trans, symbolTable, false);
 		// translated (linked)
 		dump(TRANS_LINK_PATH, trans, symbolTable, true);
-		// optimized (symbolic)
-		dump(OPT_PATH, opt, optSymbolTable, false);
-		// optimized (linked)
-		dump(OPT_LINK_PATH, opt, optSymbolTable, true);
 	}
 	
 	/**
