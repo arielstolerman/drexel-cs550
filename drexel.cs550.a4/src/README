@@ -1,5 +1,5 @@
 Drexel CS550
-Assignment 3
+Assignment 4
 ############
 Group 1:
 - Ariel Stolerman
@@ -9,7 +9,7 @@ Group 1:
 
 ### summary ###
 
-A compiler for the mini-language (does not support lists or functions).
+A compiler for the mini-language with function support.
 
 
 ### Files and Descriptions ###
@@ -45,14 +45,12 @@ Important added/modified classes and enums:
   to impose implementation of a translate method
 - Program:
   The Program class is modified to provide several sets of methods:
-  1) compile methods: includes the translate and optimize methods, both called
-     by the compile method (two copies of translated instructions and symbol
-     table are maintained - non-optimized and optimized).
-     The translate and optimize methods also call link, which sets the address
-     field of each symbol in the symbol table.
-  2) dump to file methods: allow dumping the instructions (optimized or not)
-     to files, either in a symbolic or linked representation.
-     Linked representation will create the corresponding memory files.
+  1) compile methods: includes the translate, link and compile methods (the
+  	 latter simply calls the first two).
+     The link method sets the address field of each symbol in the symbol table.
+  2) dump to file methods: allow dumping the instructions to files, either in a
+  	 symbolic or linked representation.
+     Linked representation will create the corresponding memory file.
   3) output methods: same as the dump methods, only output to the standard
      output.
 
@@ -68,9 +66,6 @@ Compiles the input code from stdin and creates:
 - symbolic RAL code in trans.txt
 - linked code and initial memory image in linked.txt and linked_mem.txt,
   respectively
-- linked code and initial memory image of the optimized version, where
-  peephole optimizations are applied, in opt_linked.txt and opt_linked_mem.txt,
-  respectively
 The linked files above are suitable for running with the RAM simulator.
 
 > view-trans
@@ -80,15 +75,8 @@ CATs the produced symbolic RAL code in trans.txt.
 CATs the linked RAL code and its initial memory image from linked.txt and
 linked_mem.txt.
 
-> view-op
-CATs the linked optimized RAL code and its initial memory image from
-opt_linked.txt and opt_linked_mem.txt. 
-
 > run
 Runs the RAM simulator under ~jjohnson/bin/ram on the linked code.
-
-> run-op
-Runs the RAM simulator as above on the linked optimized code.
 
 > clean
 > make clean
@@ -99,10 +87,10 @@ Cleans all temporary files generated during the build and compile process.
 
 > test/
 This directory contains (some of the) test cases with which we tested our project.
-Each test file has an associated folder withe the output files (trans.txt etc.)
+Each test file has an associated folder with the output files (trans.txt etc.)
 The compiled output memory image file contains comments about which address is
 assigned to which variable, temp etc.
-The test files were ran with the RAM simulator, and the results in the memory
+The test files were checked with the RAM simulator, and the results in the memory
 at the end of the process were confirmed as the expected values for the
 corresponding variables.
 Test files:
