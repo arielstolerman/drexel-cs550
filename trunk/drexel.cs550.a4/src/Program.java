@@ -24,7 +24,11 @@ import java.util.*;
  * Enum for symbol table entry type
  */
 enum SymbolType {
-	TEMP("temporary"), VAR("variable"), CONST("constant"), LABEL("label");
+	TEMP("temporary"),
+	VAR("variable"),
+	PARAM("parameter"),
+	CONST("constant"),
+	LABEL("label");
 	
 	private SymbolType(String name) {
 		this.name = name;
@@ -138,6 +142,18 @@ class SymbolValue {
 			symbolTable.put(var,
 					new SymbolValue(var, null, SymbolType.VAR, null));
 		return var;
+	}
+	
+	/**
+	 * Checks if the given parameter name exists in the symbol table, and adds
+	 * it if not. Returns the parameter name.
+	 */
+	public static String updateParam(HashMap<String, SymbolValue> symbolTable,
+			String param) {
+		if (!symbolTable.containsKey(param))
+			symbolTable.put(param,
+					new SymbolValue(param, null, SymbolType.PARAM, null));
+		return param;
 	}
 
 	/**
@@ -295,7 +311,7 @@ abstract class Component {
 
 	public abstract LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable);
+			SortedMap<String, Proc> functionTable);
 }
 
 /**
@@ -325,7 +341,7 @@ abstract class Expr extends Component {
 	public static LinkedList<Instruction> getBinaryOpInsts(Expr expr1,
 			Expr expr2, InstructionType op,
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// translate two sub-expressions
 		LinkedList<Instruction> code1 = expr1.translate(symbolTable,
@@ -369,7 +385,7 @@ class Ident extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA IDENT
 		res.add(new Instruction(InstructionType.LDA, SymbolValue.updateVar(
@@ -396,7 +412,7 @@ class Number extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA NUMBER
 		res.add(new Instruction(InstructionType.LDA, SymbolValue.updateConst(
@@ -420,7 +436,7 @@ class Times extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.MUL, symbolTable,
 				functionTable);
 	}
@@ -438,7 +454,7 @@ class Plus extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.ADD, symbolTable,
 				functionTable);
 	}
@@ -456,7 +472,7 @@ class Minus extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.SUB, symbolTable,
 				functionTable);
 	}
@@ -472,16 +488,20 @@ class FunctionCall extends Expr {
         explist = el;
     }
 
-//    public Integer eval(HashMap<String, Integer> nametable, HashMap<String, Proc> functiontable, LinkedList var) {
+//    public Integer eval(HashMap<String, Integer> nametable, SortedMap<String, Proc> functionTable, LinkedList var) {
 //        return functiontable.get(funcid).apply(nametable, functiontable, var, explist);
 //    }
 
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
-		// TODO Auto-generated method stub
-		return null;
+			SortedMap<String, Proc> functionTable) {
+		LinkedList<Instruction> insts = new LinkedList<>();
+		//TODO prepare activation record
+		
+		// JMP to callee
+		insts.add(new Instruction(InstructionType.JMP, funcid));
+		return insts;
 	}
 }
 
@@ -493,26 +513,26 @@ class DefineStatement extends Statement {
 	private String name;
 	private Proc proc;
 
-	// private ParamList paramlist;
-	// private StatementList statementlist;
-
 	public DefineStatement(String id, Proc process) {
 		name = id;
 		proc = process;
 	}
 
-//	public void eval(HashMap<String, Element> nametable,
-//			HashMap<String, Proc> functable, LinkedList var) {
-//		// get the named proc object from the function table.
-//		// System.out.println("Adding Process:"+name+" to Functiontable");
-//		functable.put(name, proc);
-//	}
+	/**
+	 * Adds the underlying procedure to the given function table.
+	 * @param functionTable
+	 */
+	public void translate(SortedMap<String, Proc> functionTable) {
+		functionTable.put(name, proc);
+	}
 
 	@Override
+	/**
+	 * Should never be called!
+	 */
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
-		// TODO Auto-generated method stub
+			SortedMap<String, Proc> functionTable) {
 		return null;
 	}
 }
@@ -528,13 +548,13 @@ class ReturnStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 //	public void eval(HashMap<String, Element> nametable,
-//			HashMap<String, Proc> functiontable, LinkedList var)
+//			SortedMap<String, Proc> functionTable, LinkedList var)
 //			throws ReturnValue, RuntimeException {
 //		throw new ReturnValue(expr.eval(nametable, functiontable, var));
 //	}
@@ -553,7 +573,7 @@ class AssignStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		LinkedList<Instruction> exprCode = expr.translate(symbolTable,
 				functionTable);
@@ -588,7 +608,7 @@ class IfStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// code_e
 		LinkedList<Instruction> cond = expr.translate(symbolTable,functionTable);
@@ -632,7 +652,7 @@ class WhileStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// L1: code_e
 		String l1 = SymbolValue.addLabel(symbolTable);
@@ -673,7 +693,7 @@ class RepeatStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// L1: code_s
 		String l1 = SymbolValue.addLabel(symbolTable);
@@ -705,8 +725,12 @@ class ParamList {
 
 	private List<String> parameterlist;
 
-	public ParamList(String name) {
+	public ParamList() {
 		parameterlist = new LinkedList<String>();
+	}
+	
+	public ParamList(String name) {
+		this();
 		parameterlist.add(name);
 	}
 
@@ -749,14 +773,23 @@ class StatementList extends Component {
 
 	private LinkedList<Statement> statementlist;
 
-	public StatementList(Statement statement) {
+	public StatementList() {
 		statementlist = new LinkedList<Statement>();
+	}
+	
+	public StatementList(Statement statement) {
+		this();
 		statementlist.add(statement);
 	}
 	
 	public void insert(Statement s) {
 		// we need to add it to the front of the list
 		statementlist.add(0, s);
+	}
+	
+	public void insertFront(Statement s) {
+		// add new statement to the front of the list
+		statementlist.add(s);
 	}
 
 	public LinkedList<Statement> getStatements() {
@@ -766,7 +799,7 @@ class StatementList extends Component {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functionTable) {
+			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		for (Statement stmt : statementlist)
 			res.addAll(stmt.translate(symbolTable,functionTable));
@@ -776,16 +809,32 @@ class StatementList extends Component {
 
 class Proc {
 
+	/**
+	 * Name of main procedure.
+	 */
+	public static final String MAIN_NAME = "__main__";
+	
 	private ParamList parameterlist;
 	private StatementList stmtlist;
+	private HashMap<String, SymbolValue> symbolTable;
+	private Integer addr = null;
+	private Integer numInstructions = null;
+	private boolean isMain;
 
 	public Proc(ParamList pl, StatementList sl) {
+		symbolTable = new HashMap<>();
 		parameterlist = pl;
 		stmtlist = sl;
 	}
-
-	public Integer apply(HashMap<String, SymbolValue> symbolTable,
-			HashMap<String, Proc> functiontable,
+	
+	// factory method for creating a Proc for "main"
+	public static Proc getMainProc(StatementList sl) {
+		Proc main = new Proc(new ParamList(),sl);
+		main.isMain = true;
+		return main;
+	}
+	
+	public Integer apply(SortedMap<String, Proc> functionTable,
 			ExpressionList expressionlist) throws RuntimeException {
 		//TODO
 //		HashMap<String, SymbolValue> newSymbolTable = new HashMap<String, SymbolValue>();
@@ -827,6 +876,65 @@ class Proc {
 //		// reach this...
 		return null;
 	}
+
+	public LinkedList<Instruction> translate(
+			SortedMap<String, Proc> functionTable) {
+		LinkedList<Instruction> insts = new LinkedList<>();
+		
+		// TODO code here
+		// - make sure to check if function calls are legal
+		
+		// add HLT to end of "main" procedure ONLY
+		if (isMain)
+			insts.add(new Instruction(InstructionType.HLT, null));
+		
+		// iterate and merge label-only instructions with following instructions
+		Iterator<Instruction> iter = insts.iterator();
+		if (iter.hasNext())
+		{
+			Instruction prev = iter.next(), curr;
+			while (iter.hasNext()) {
+				curr = iter.next();
+				// if prev is a label-only instruction
+				// and curr has no label, merge
+				if (prev.label() != null && prev.type() == InstructionType.NONE &&
+						curr.label() == null) {
+					prev.setType(curr.type());
+					prev.setArg(curr.arg());
+					iter.remove(); // delete curr from set
+				}
+				// otherwise advance prev
+				else {
+					prev = curr;
+				}
+			}
+		}
+		
+		// update number of instructions
+		numInstructions = insts.size();
+		
+		return insts;
+	}
+	
+	/**
+	 * Sets the start address (line) of the procedure to the given one.
+	 * @param procStartAddr
+	 */
+	public void setAddr(int procStartAddr) {
+		addr = procStartAddr;
+	}
+	
+	public Integer getAddr() {
+		return addr;
+	}
+	
+	/**
+	 * @return the number of instructions in the translated procedure, or
+	 * null if the procedure is not translated yet.
+	 */
+	public Integer numInstructions() {
+		return numInstructions;
+	}
 }
 
 class Program {
@@ -837,12 +945,12 @@ class Program {
 	
 	private StatementList stmtlist;
 	private LinkedList<Instruction> trans;
-	private HashMap<String, SymbolValue> symbolTable;
-	private HashMap<String, Proc> functionTable;
+	//private HashMap<String, SymbolValue> symbolTable;
+	private TreeMap<String, Proc> functionTable;
 
 	public Program(StatementList list) {
 		stmtlist = list;
-		symbolTable = new HashMap<>();
+		//symbolTable = new HashMap<>();
 	}
 	
 	// -------------------------------------------------------------------------
@@ -861,36 +969,42 @@ class Program {
 	 * Translates the program to RAL with symbolic representation.
 	 */
 	public void translate() {
-		trans = stmtlist.translate(symbolTable, functionTable);
-		// add halt at end if does not exist
-		if (trans.getLast().type() != InstructionType.HLT)
-			trans.add(new Instruction(InstructionType.HLT, null));
-		// iterate and merge label-only instructions with following instructions
-		Iterator<Instruction> iter = trans.iterator();
-		if (!iter.hasNext())
-			return;
-		Instruction prev = iter.next(), curr;
-		while (iter.hasNext()) {
-			curr = iter.next();
-			// if prev is a label-only instruction
-			// and curr has no label, merge
-			if (prev.label() != null && prev.type() == InstructionType.NONE &&
-				curr.label() == null) {
-				prev.setType(curr.type());
-				prev.setArg(curr.arg());
-				iter.remove(); // delete curr from set
-			}
-			// otherwise advance prev
-			else {
-				prev = curr;
+		// isolate main()'s code from all other procedures
+		StatementList mainStmtList = new StatementList();
+		for (Statement stmt: stmtlist.getStatements()) {
+			if (stmt instanceof DefineStatement) {
+				// add Proc to function table, untranslated
+				((DefineStatement) stmt).translate(functionTable);
+			} else {
+				// add statement to main code
+				mainStmtList.insertFront(stmt);
 			}
 		}
+		// create new Proc for main
+		functionTable.put(Proc.MAIN_NAME, Proc.getMainProc(mainStmtList));
+		
+		// translate in the following order:
+		// - main code
+		// - other procedures code
+		trans = new LinkedList<>();
+		for (String procName: functionTable.keySet())
+			trans.addAll(functionTable.get(procName).translate(functionTable));
 	}
 	
 	/**
 	 * Links the symbols in the symbol table to hard-coded addresses.
 	 */
 	public void link() {
+		// assign line numbers to procedure labels
+		int line = 1;
+		Proc currProc;
+		for (String procName: functionTable.keySet()) {
+			currProc = functionTable.get(procName);
+			currProc.setAddr(line);
+			line += currProc.numInstructions();
+		}
+		
+		//TODO move all the following to Proc
 		// iterate over symbols and count consts and vars
 		int consts = 0, vars = 0;
 		SymbolValue symVal;
@@ -911,7 +1025,7 @@ class Program {
 			}
 		}
 		// update label address to line
-		int line = 0;
+		line = 0;
 		String label;
 		for (Instruction inst: trans) {
 			line++;
