@@ -196,7 +196,7 @@ class SymbolValue {
  * Enum for RAL instruction types.
  */
 enum InstructionType {
-	LDA, LDI, STA, STI, ADD, SUB, MUL, JMP, JMZ, JMN, HLT, NONE
+	LDA, LDI, STA, STI, ADD, SUB, MUL, JMP, JMI, JMZ, JMN, HLT, NONE
 }
 
 /**
@@ -206,6 +206,7 @@ enum InstructionType {
 class Instruction {
 
 	// fields
+	private Integer line;
 	private String label; // null == no label
 	private InstructionType type;
 	private String arg;
@@ -250,7 +251,7 @@ class Instruction {
 	 * parameter is true, returns the final address as the instruction argument.
 	 */
 	public String toString(HashMap<String, SymbolValue> symbolTable,
-			boolean linked) {
+			boolean linked) {		
 		// add label if exists
 		String res;
 		if (linked) {
@@ -271,12 +272,20 @@ class Instruction {
 		}
 		// semicolon
 		if (type != InstructionType.NONE)
+		{
 			res += " ;";
+			if (line != null)
+				res += " (line " + line + ")";
+		}
 		return res;
 	}
 
 	// getters
 
+	public Integer line() {
+		return line;
+	}
+	
 	public String label() {
 		return label;
 	}
@@ -290,6 +299,10 @@ class Instruction {
 	}
 	
 	// setters
+	
+	public void setLine(int line) {
+		this.line = line;
+	}
 	
 	public void setLabel(String label) {
 		this.label = label;
@@ -498,9 +511,12 @@ class FunctionCall extends Expr {
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> insts = new LinkedList<>();
 		//TODO prepare activation record
+		// save old FP
+		int oldFP = Program.FP;
+		
 		
 		// JMP to callee
-		insts.add(new Instruction(InstructionType.JMP, funcid));
+		insts.add(new Instruction(InstructionType.JMI, funcid));
 		return insts;
 	}
 }
@@ -816,6 +832,9 @@ class Proc {
 	
 	private ParamList parameterlist;
 	private StatementList stmtlist;
+	
+	// data for translated code
+	private LinkedList<Instruction> trans;
 	private HashMap<String, SymbolValue> symbolTable;
 	private Integer addr = null;
 	private Integer numInstructions = null;
@@ -879,17 +898,20 @@ class Proc {
 
 	public LinkedList<Instruction> translate(
 			SortedMap<String, Proc> functionTable) {
-		LinkedList<Instruction> insts = new LinkedList<>();
+		// if already translated, return
+		if (trans != null)
+			return trans;
 		
+		trans = new LinkedList<>();
 		// TODO code here
 		// - make sure to check if function calls are legal
 		
 		// add HLT to end of "main" procedure ONLY
 		if (isMain)
-			insts.add(new Instruction(InstructionType.HLT, null));
+			trans.add(new Instruction(InstructionType.HLT, null));
 		
 		// iterate and merge label-only instructions with following instructions
-		Iterator<Instruction> iter = insts.iterator();
+		Iterator<Instruction> iter = trans.iterator();
 		if (iter.hasNext())
 		{
 			Instruction prev = iter.next(), curr;
@@ -911,17 +933,28 @@ class Proc {
 		}
 		
 		// update number of instructions
-		numInstructions = insts.size();
+		numInstructions = trans.size();
 		
-		return insts;
+		return trans;
 	}
 	
 	/**
-	 * Sets the start address (line) of the procedure to the given one.
-	 * @param procStartAddr
+	 * Sets the start address (line) of the procedure to the given one,
+	 * and the lines of every instruction in the procedure body.
+	 * @param procStartLine
 	 */
-	public void setAddr(int procStartAddr) {
-		addr = procStartAddr;
+	public void setLines(int procStartLine) {
+		// if not translated, do nothing
+		if (trans == null)
+			return;
+		
+		addr = procStartLine;
+		Iterator<Instruction> iter = trans.iterator();
+		int i = addr;
+		while (iter.hasNext()) {
+			iter.next().setLine(i);
+			i++;
+		}
 	}
 	
 	public Integer getAddr() {
@@ -945,12 +978,15 @@ class Program {
 	
 	private StatementList stmtlist;
 	private LinkedList<Instruction> trans;
-	//private HashMap<String, SymbolValue> symbolTable;
 	private TreeMap<String, Proc> functionTable;
+	
+	// global SP and FP
+	public static int SP;
+	public static int FP;
 
-	public Program(StatementList list) {
+	public Program(StatementList list, int initSP) {
 		stmtlist = list;
-		//symbolTable = new HashMap<>();
+		SP = initSP;
 	}
 	
 	// -------------------------------------------------------------------------
@@ -1000,7 +1036,7 @@ class Program {
 		Proc currProc;
 		for (String procName: functionTable.keySet()) {
 			currProc = functionTable.get(procName);
-			currProc.setAddr(line);
+			currProc.setLines(line);
 			line += currProc.numInstructions();
 		}
 		
