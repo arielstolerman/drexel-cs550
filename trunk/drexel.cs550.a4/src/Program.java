@@ -615,9 +615,9 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
 		// LDI BUFF
 		insts.add(new Instruction(InstructionType.LDI, Program.BUFF_ADDR));
-		// STA T1
-		String t1 = SymbolValue.addTemp(symbolTable);
-		insts.add(new Instruction(InstructionType.STA, t1));
+		// STA <res>
+		String res = SymbolValue.addTemp(symbolTable);
+		insts.add(new Instruction(InstructionType.STA, res));
 		
 		// --- revert to old SP and FP ---
 
@@ -640,6 +640,11 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.SUB, sizeStr));
 		// STA SP
 		insts.add(new Instruction(InstructionType.STA, Program.SP_ADDR));
+		
+		// make sure the returned value is the argument of the last instruction
+		// of this function call. done arbitrarily using LDA
+		// LDA <res>
+		insts.add(new Instruction(InstructionType.LDA, res));
 		
 		return insts;
 	}
