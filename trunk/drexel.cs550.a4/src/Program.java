@@ -514,10 +514,6 @@ class FunctionCall extends Expr {
         explist = el;
     }
 
-//    public Integer eval(HashMap<String, Integer> nametable, SortedMap<String, Proc> functionTable, LinkedList var) {
-//        return functiontable.get(funcid).apply(nametable, functiontable, var, explist);
-//    }
-
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
@@ -542,13 +538,13 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.ADD, sizeStr));
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
-		// STA FP_BUFF
-		insts.add(new Instruction(InstructionType.STA, Program.FP_BUFF_ADDR));
+		// STA BUFF
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
 		// store current FP in prev_FP address
 		// LDA FP
 		insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
-		// STI FP_BUFF
-		insts.add(new Instruction(InstructionType.STI, Program.FP_BUFF_ADDR));
+		// STI BUFF
+		insts.add(new Instruction(InstructionType.STI, Program.BUFF_ADDR));
 		
 		// update FP (which is current SP)
 		// LDA SP
@@ -565,14 +561,14 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.STA, Program.SP_ADDR));
 		
 		// save old FP at respective position and update to new FP
-		// LDA 2 (current FP)
+		// LDA FP
 		insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
 		// STA <prev_FP = SP + size - 1>
 		insts.add(new Instruction(InstructionType.STA,
 				(Program.SP + size - 1) + ""));
 		// LDA SP (address of new FP)
 		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
-		// STA 2 (address of FP)
+		// STA FP
 		insts.add(new Instruction(InstructionType.STA, Program.FP_ADDR));
 		
 		// --- calculate and store parameters ---
@@ -601,6 +597,49 @@ class FunctionCall extends Expr {
 		// --- call the procedure (implicitly stores return address in SP) ---
 		// CAL
 		insts.add(new Instruction(InstructionType.CAL, null));
+		
+		// ---------------------------------------------------------------------
+		// callee procedure works
+		// returns to the following instruction(s) with the return value
+		// updated in its activation record
+		// ---------------------------------------------------------------------
+		
+		// --- store callee return value in local temporary ---
+		
+		// LDA SP
+		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		// SUB 2
+		String two = SymbolValue.updateConst(consts, 2);
+		insts.add(new Instruction(InstructionType.SUB, two));
+		// STA BUFF
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		// LDI BUFF
+		insts.add(new Instruction(InstructionType.LDI, Program.BUFF_ADDR));
+		// STA T1
+		String t1 = SymbolValue.addTemp(symbolTable);
+		insts.add(new Instruction(InstructionType.STA, t1));
+		
+		// --- revert to old SP and FP ---
+
+		// revert to old FP (from prev_FP at address current SP - 1)
+		// LDA SP
+		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		// SUB 1
+		insts.add(new Instruction(InstructionType.SUB, one));
+		// STA BUFF
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		// LDI BUFF
+		insts.add(new Instruction(InstructionType.LDI, Program.BUFF_ADDR));
+		// STA FP
+		insts.add(new Instruction(InstructionType.STA, Program.FP_ADDR));
+		
+		// revert to old SP (current SP - <size>)
+		// LDA SP
+		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		// SUB <size>
+		insts.add(new Instruction(InstructionType.SUB, sizeStr));
+		// STA SP
+		insts.add(new Instruction(InstructionType.STA, Program.SP_ADDR));
 		
 		return insts;
 	}
@@ -1098,10 +1137,10 @@ class Program {
 	// global SP and FP
 	public static int SP;
 	public static int FP;
-	public static int FP_BUFF;
+	public static int BUFF;
 	public static String SP_ADDR = "1";
 	public static String FP_ADDR = "2";
-	public static String FP_BUFF_ADDR = "3";
+	public static String BUFF_ADDR = "3";
 	
 	public Program(StatementList list, int initSP) {
 		stmtlist = list;
