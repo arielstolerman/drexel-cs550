@@ -725,12 +725,6 @@ class ReturnStatement extends Statement {
 		
 		return null;
 	}
-
-//	public void eval(HashMap<String, Element> nametable,
-//			SortedMap<String, Proc> functionTable, LinkedList var)
-//			throws ReturnValue, RuntimeException {
-//		throw new ReturnValue(expr.eval(nametable, functiontable, var));
-//	}
 }
 
 class AssignStatement extends Statement {
