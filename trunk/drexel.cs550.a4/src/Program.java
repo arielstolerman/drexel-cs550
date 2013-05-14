@@ -304,6 +304,33 @@ class Instruction {
 		return arg;
 	}
 	
+	/**
+	 * Constructs the required LDA commands: if the argument is NOT in the 
+	 * symbol table (a constant, SP, FP etc.) adds a simple LDA command.
+	 * Otherwise, loads using SP + offset.
+	 * @param consts
+	 * @param symbolTable
+	 * @param arg
+	 * @return
+	 */
+	public static LinkedList<Instruction> getLDAInsts(
+			HashMap<String, SymbolValue> consts,
+			HashMap<String, SymbolValue> symbolTable,
+			String arg) {
+		LinkedList<Instruction> res = new LinkedList<>();
+		if (consts.containsKey(arg)) {
+			// LDA <arg>
+			res.addAll(Instruction.getLDAInsts(consts, symbolTable, arg));
+		}
+		else {
+			// LDA SP
+			res.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+			// ADD <offset>
+			res.add(new Instruction(InstructionType.ADD, arg));
+		}
+		return res;
+	}
+	
 	// setters
 	
 	public void setLine(int line) {
@@ -363,12 +390,12 @@ abstract class Expr extends Component {
 		// if not a subtraction, switch next commands for possible peephole
 		if (op != InstructionType.SUB) {
 			// LDA T2
-			res.add(new Instruction(InstructionType.LDA, t2));
+			res.addAll(Instruction.getLDAInsts(consts, symbolTable, t2));
 			// OP T1
 			res.add(new Instruction(op, t1));
 		} else {
 			// LDA T1
-			res.add(new Instruction(InstructionType.LDA, t1));
+			res.addAll(Instruction.getLDAInsts(consts, symbolTable, t1));
 			// OP T2
 			res.add(new Instruction(op, t2));
 		}
@@ -394,7 +421,7 @@ class Ident extends Expr {
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA IDENT
-		res.add(new Instruction(InstructionType.LDA, SymbolValue.updateVar(
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable, SymbolValue.updateVar(
 				symbolTable, name)));
 		// STA t_n
 		res.add(new Instruction(InstructionType.STA, SymbolValue
@@ -422,7 +449,7 @@ class Number extends Expr {
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA NUMBER
-		res.add(new Instruction(InstructionType.LDA, SymbolValue.updateConst(
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable, SymbolValue.updateConst(
 				consts, value)));
 		// STA t_n
 		res.add(new Instruction(InstructionType.STA, SymbolValue
@@ -618,7 +645,7 @@ class FunctionCall extends Expr {
 		// make sure the returned value is the argument of the last instruction
 		// of this function call. done arbitrarily using LDA
 		// LDA <res>
-		insts.add(new Instruction(InstructionType.LDA, res));
+		insts.addAll(Instruction.getLDAInsts(consts, symbolTable, res));
 		
 		return insts;
 	}
@@ -688,7 +715,7 @@ class ReturnStatement extends Statement {
 		// STA BUFF
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
 		// LDA <ret>
-		insts.add(new Instruction(InstructionType.LDA, ret));
+		insts.addAll(Instruction.getLDAInsts(consts, symbolTable, ret));
 		// STI BUFF
 		insts.add(new Instruction(InstructionType.STI, Program.BUFF_ADDR));
 		
@@ -728,7 +755,7 @@ class AssignStatement extends Statement {
 		// expr code
 		res.addAll(exprCode);
 		// LDA t
-		res.add(new Instruction(InstructionType.LDA, t));
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
 		// STA IDENT
 		res.add(new Instruction(InstructionType.STA, SymbolValue.updateVar(
 				symbolTable, name)));
@@ -764,7 +791,7 @@ class IfStatement extends Statement {
 		String t = cond.getLast().arg();
 		res.addAll(cond);
 		// LDA t
-		res.add(new Instruction(InstructionType.LDA, t));
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
 		// JMN L1
 		String l1 = SymbolValue.addLabel(symbolTable);
 		res.add(new Instruction(InstructionType.JMN, l1));
@@ -812,7 +839,7 @@ class WhileStatement extends Statement {
 		String t = cond.getLast().arg();
 		res.addAll(cond);
 		// LDA t
-		res.add(new Instruction(InstructionType.LDA, t));
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
 		// JMN L2
 		String l2 = SymbolValue.addLabel(symbolTable);
 		res.add(new Instruction(InstructionType.JMN, l2));
@@ -858,7 +885,7 @@ class RepeatStatement extends Statement {
 		String t = cond.getLast().arg();
 		res.addAll(cond);
 		// LDA t
-		res.add(new Instruction(InstructionType.LDA, t));
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
 		// JMN L2
 		String l2 = SymbolValue.addLabel(symbolTable);
 		res.add(new Instruction(InstructionType.JMN, l2));
