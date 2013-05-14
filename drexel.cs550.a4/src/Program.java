@@ -334,22 +334,6 @@ abstract class Component {
 			SortedMap<String, Proc> functionTable);
 }
 
-/**
- * Wrapper for statement "return" values
- */
-class ReturnValue extends RuntimeException {
-
-	private Integer retValue;
-
-	public ReturnValue(Integer retValue) {
-		this.retValue = retValue;
-	}
-
-	public Integer getRetValue() {
-		return retValue;
-	}
-}
-
 // =============================================================================
 
 abstract class Expr extends Component {
@@ -532,6 +516,7 @@ class FunctionCall extends Expr {
 		// --- update FP & SP ---
 		
 		// calculate prev_FP position (SP + size - 1) in new activation record
+		// and store FP to it
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
 		// ADD <size>
@@ -559,17 +544,6 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.ADD, sizeStr));
 		// STA SP
 		insts.add(new Instruction(InstructionType.STA, Program.SP_ADDR));
-		
-		// save old FP at respective position and update to new FP
-		// LDA FP
-		insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
-		// STA <prev_FP = SP + size - 1>
-		insts.add(new Instruction(InstructionType.STA,
-				(Program.SP + size - 1) + ""));
-		// LDA SP (address of new FP)
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
-		// STA FP
-		insts.add(new Instruction(InstructionType.STA, Program.FP_ADDR));
 		
 		// --- calculate and store parameters ---
 		
@@ -696,7 +670,32 @@ class ReturnStatement extends Statement {
 			HashMap<String, SymbolValue> consts,
 			HashMap<String, SymbolValue> symbolTable,
 			SortedMap<String, Proc> functionTable) {
-		// TODO Auto-generated method stub
+
+		LinkedList<Instruction> insts = new LinkedList<>();
+		// calculate return value expression
+		LinkedList<Instruction> resInsts = expr.translate(consts, symbolTable,
+				functionTable);
+		String ret = resInsts.getLast().arg();
+		// add all expr instructions
+		insts.addAll(resInsts);
+		
+		// store result in return value address
+		// LDA SP
+		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		// SUB 2
+		String two = SymbolValue.updateConst(consts, 2);
+		insts.add(new Instruction(InstructionType.SUB, two));
+		// STA BUFF
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		// LDA <ret>
+		insts.add(new Instruction(InstructionType.LDA, ret));
+		// STI BUFF
+		insts.add(new Instruction(InstructionType.STI, Program.BUFF_ADDR));
+		
+		// jump indirectly to SP (that holds return address)
+		// JMI SP
+		insts.add(new Instruction(InstructionType.JMI, Program.SP_ADDR));
+		
 		return null;
 	}
 
@@ -1134,22 +1133,22 @@ class Program {
 	private static String TRANS_PATH = "trans.txt";
 	private static String TRANS_LINK_PATH = "linked.txt";
 	
+	private int initSP;
+	private int initFP;
 	private StatementList stmtlist;
 	private LinkedList<Instruction> trans;
 	private HashMap<String, SymbolValue> consts = new HashMap<>();
 	private TreeMap<String, Proc> functionTable;
 	
 	// global SP and FP
-	public static int SP;
-	public static int FP;
-	public static int BUFF;
 	public static String SP_ADDR = "1";
 	public static String FP_ADDR = "2";
 	public static String BUFF_ADDR = "3";
 	
-	public Program(StatementList list, int initSP) {
+	public Program(StatementList list, int initSP, int initFP) {
 		stmtlist = list;
-		SP = initSP;
+		this.initSP = initSP;
+		this.initFP = initFP;
 	}
 	
 	// -------------------------------------------------------------------------
