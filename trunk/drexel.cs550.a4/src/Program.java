@@ -1324,10 +1324,8 @@ class Program {
 	public static String BUFF1_ADDR = "3";
 	public static String BUFF2_ADDR = "4";
 	
-	public Program(StatementList list, int initSP, int initFP) {
+	public Program(StatementList list) {
 		stmtlist = list;
-		this.initSP = initSP;
-		this.initFP = initFP;
 	}
 	
 	// -------------------------------------------------------------------------
@@ -1408,8 +1406,8 @@ class Program {
 		}
 		
 		// finally, set initial values to SP and FP
-		initFP = 4;
-		initSP = 4 + functionTable.get(Proc.MAIN_NAME)
+		initFP = 4 + consts.size();
+		initSP = initFP + functionTable.get(Proc.MAIN_NAME)
 				.getActivationRecordSize();
 	}
 	
