@@ -48,8 +48,7 @@ enum SymbolType {
  */
 class SymbolValue {
 
-	// global counters
-	private static int TEMP_COUNTER = 0;
+	// global label counter
 	private static int LABEL_COUNTER = 1;
 
 	// fields
@@ -373,7 +372,8 @@ class Instruction {
 	 * parameter is true, returns the final address as the instruction argument.
 	 */
 	public String toString(HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable, boolean linked) {		
+			HashMap<String, SymbolValue> symbolTable,
+			SortedMap<String, Proc> functionTable, boolean linked) {		
 		// add label if exists
 		String res;
 		if (linked) {
@@ -391,9 +391,18 @@ class Instruction {
 				if (symbolTable.containsKey(arg))
 					// parameter, variable, temporary
 					res += " " + symbolTable.get(arg).addr();
-				else
+				else if (consts.containsKey(arg))
 					// constant
 					res += " " + consts.get(arg).addr();
+				else if (functionTable.containsKey(arg))
+					// function
+					res += " " + functionTable.get(arg).getAddr();
+				else {
+					// error
+					System.err.println("unrecognized argument in line " + line
+							+ ": " + arg);
+					System.exit(-1);
+				}
 			}
 			else
 				res += " " + arg;
@@ -1287,6 +1296,13 @@ class Proc {
 		offsetCounter++;
 		return currOffset;
 	}
+	
+	/**
+	 * @return the translated instruction list, or null if not translated yet.
+	 */
+	public LinkedList<Instruction> getTrans() {
+		return insts;
+	}
 }
 
 class Program {
@@ -1298,7 +1314,7 @@ class Program {
 	private int initSP;
 	private int initFP;
 	private StatementList stmtlist;
-	private LinkedList<Instruction> trans;
+	private TreeMap<String, LinkedList<Instruction>> trans;
 	private HashMap<String, SymbolValue> consts = new HashMap<>();
 	private TreeMap<String, Proc> functionTable;
 	
@@ -1345,12 +1361,13 @@ class Program {
 		functionTable.put(Proc.MAIN_NAME, Proc.getMainProc(mainStmtList));
 		
 		// translate in the following order:
-		// - main code
-		// - other procedures code
-		trans = new LinkedList<>();
-		for (String procName: functionTable.keySet()) {
-			trans.addAll(functionTable.get(procName).translate(consts,
-					functionTable));
+		// - main procedure
+		// - all other procedures
+		trans = new TreeMap<>();
+		for (String procName : functionTable.keySet()) {
+			trans.put(procName,
+					functionTable.get(procName)
+							.translate(consts, functionTable));
 		}
 	}
 	
@@ -1367,58 +1384,33 @@ class Program {
 			line += currProc.numInstructions();
 		}
 		
-		//TODO move all the following to Proc
-		// iterate over symbols and count consts and vars
-		int consts = 0, vars = 0;
-		SymbolValue symVal;
-		for (String key: symbolTable.keySet()) {
-			switch ((symVal = symbolTable.get(key)).type()) {
-			case CONST:
-				consts++;
-				break;
-			case VAR:
-				vars++;
-				break;
-			case TEMP:
-				// do nothing
-				break;
-			case LABEL:
-				// do nothing
-				break;
-			}
+		// at this point params, vars and temps are linked (their addresses are
+		// offsets w.r.t. their containing procedure) and procedures are linked
+		// as well (they have a fixed starting line in the code) so only need to:
+		
+		// 1) assign addresses to constants
+		int constAddr = 5; // 1-4 saved for SP, FP, BUFF1 and BUFF2
+		for (SymbolValue constant: consts.values()) {
+			constant.setAddr(constAddr);
+			constAddr++;
 		}
-		// update label address to line
-		line = 0;
+		
+		// 2) assign line numbers to labels
+		HashMap<String, SymbolValue> symbolTable;
 		String label;
-		for (Instruction inst: trans) {
-			line++;
-			if ((label = inst.label()) != null)
-				symbolTable.get(label).setAddr(line);
-		}
-		// initialize address counts (consts -> vars -> temps)
-		int constAddr = 1;
-		int varAddr = constAddr + consts;
-		int tempAddr = varAddr + vars;
-		// assign addresses
-		for (String key: symbolTable.keySet()) {
-			switch ((symVal = symbolTable.get(key)).type()) {
-			case CONST:
-				symVal.setAddr(constAddr);
-				constAddr++;
-				break;
-			case VAR:
-				symVal.setAddr(varAddr);
-				varAddr++;
-				break;
-			case TEMP:
-				symVal.setAddr(tempAddr);
-				tempAddr++;
-				break;
-			case LABEL:
-				// do nothing
-				break;
+		for (String procName: functionTable.keySet()) {
+			currProc = functionTable.get(procName);
+			symbolTable = currProc.symbolTable();
+			for (Instruction inst: currProc.getTrans()) {
+				if ((label = inst.label()) != null)
+					symbolTable.get(label).setAddr(inst.line());
 			}
 		}
+		
+		// finally, set initial values to SP and FP
+		initFP = 4;
+		initSP = 4 + functionTable.get(Proc.MAIN_NAME)
+				.getActivationRecordSize();
 	}
 	
 	// -------------------------------------------------------------------------
@@ -1436,18 +1428,31 @@ class Program {
 	}
 	
 	/**
-	 * Dumps the symbolic translated program to file.
+	 * Dumps the symbolic / linked program code to file.
 	 */
-	public void dump(String path, LinkedList<Instruction> insts,
-			HashMap<String,SymbolValue> symbolTable, boolean linked) {
-		if (insts == null)
+	public void dump(String path, boolean linked) {
+		if (trans == null)
 			return;
 		// dump instructions to file
 		try {
 			PrintWriter pw = new PrintWriter(new File(path));
-			for (Instruction inst: insts)
-				pw.println(inst.toString(symbolTable,linked));
-			pw.flush();
+			LinkedList<Instruction> insts;
+			boolean firstLine;
+			String toPrint;
+			for (String procName: trans.keySet()) {
+				insts = trans.get(procName);
+				firstLine = true;
+				for (Instruction inst : insts) {
+					toPrint = inst.toString(consts, functionTable.get(procName)
+							.symbolTable(), functionTable, linked);
+					if (firstLine) {
+						toPrint += " --- Proc: " + procName + " ---";
+						firstLine = false;
+					}
+					pw.println(toPrint);
+				}
+				pw.flush();
+			}
 			pw.close();
 		} catch (IOException e) {
 			System.err.println("Exception thrown while writing program to " +
@@ -1456,21 +1461,33 @@ class Program {
 		}
 		// if linked, dump initial memory image
 		if (linked)
-			dumpSymbolTable(path, symbolTable);
+			dumpInitMemImage(path);
 	}
 	
 	/**
-	 * Dumps symbol table to corresponding mem file.
-	 * Should be used only for linked.
+	 * Dumps initial FP, SP, buffers, constants and main's symbol table to
+	 * the given linked memory file. Should be used only for linked.
 	 */
-	private void dumpSymbolTable(String path,
-			HashMap<String,SymbolValue> symbolTable) {
+	private void dumpInitMemImage(String path) {
 		path = path.replace(".txt","_mem.txt");
-		SortedMap<Integer,SymbolValue> mem = new TreeMap<>();
+		SortedMap<Integer,String> mem = new TreeMap<>();
+		// SP
+		mem.put(1, initSP + "");
+		// FP
+		mem.put(2, initFP + "");
+		// buffers
+		mem.put(3, 0 + "");
+		mem.put(4, 0 + "");
+		// constants
+		for (SymbolValue constant: consts.values()) {
+			mem.put(constant.addr(), constant.value() + "");
+		}
+		// main's symbol table
+		HashMap<String, SymbolValue> mainSymbolTable = functionTable.get(
+				Proc.MAIN_NAME).symbolTable();
 		SymbolValue val;
-		for (String key: symbolTable.keySet()) {
-			val = symbolTable.get(key);
-			// skip labels
+		for (String key: mainSymbolTable.keySet()) {
+			val = mainSymbolTable.get(key);
 			if (val.type() == SymbolType.LABEL)
 				continue;
 			if (val.addr() == null) {
@@ -1478,15 +1495,17 @@ class Program {
 						"while dumping linked RAL memory to file " + path);
 				continue;
 			}
-			mem.put(val.addr(), val);
+			// put value in absolute address, calculated from FP + offset
+			mem.put(initFP + val.addr(), val.value() + "");
 		}
+		
+		// finally, write to mem file
 		try {
 			PrintWriter pw = new PrintWriter(new File(path));
+			String content;
 			for (int key: mem.keySet()) {
-				val = mem.get(key);
-				pw.println(key + "\t" +
-						(val.value() == null ? 0 : val.value()) +
-						"; " + val.type() + " " + val.key());
+				content = mem.get(key);
+				pw.println(key + "\t" + (content == null ? 0 : content) + "; ");
 			}
 			pw.flush();
 			pw.close();
@@ -1513,8 +1532,14 @@ class Program {
 	 */
 	public String output(boolean linked) {
 		String res = "";
-		for (Instruction inst: trans)
-			res += inst.toString(symbolTable, linked) + "\n";
+		LinkedList<Instruction> insts;
+		for (String procName : trans.keySet()) {
+			insts = trans.get(procName);
+			for (Instruction inst : insts)
+				res += inst.toString(consts, functionTable.get(procName)
+						.symbolTable(), functionTable, linked)
+						+ "\n";
+		}
 		return res;
 	}
 }
