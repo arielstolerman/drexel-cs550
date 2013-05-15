@@ -111,13 +111,15 @@ class SymbolValue {
 	// factory functions
 
 	/**
-	 * Adds a new temporary entry to the symbol table, w.r.t the global
-	 * temporary counter.
+	 * Adds a new temporary entry to the given procedure's symbol table, and
+	 * assigns the next available offset to it.
 	 */
-	public static String addTemp(HashMap<String, SymbolValue> symbolTable) {
-		String name = "T" + TEMP_COUNTER++;
-		symbolTable.put(name,
-				new SymbolValue(name, null, SymbolType.TEMP, null));
+	public static String addTemp(Proc proc, HashMap<String, SymbolValue> consts) {
+		int offset = proc.getOffsetAndIncrement();
+		updateConst(consts, offset);
+		String name = "T" + offset;
+		proc.symbolTable().put(name,
+				new SymbolValue(name, null, SymbolType.TEMP, offset));
 		return name;
 	}
 
@@ -125,9 +127,9 @@ class SymbolValue {
 	 * Adds a new label entry to the symbol table, w.r.t the global label
 	 * counter.
 	 */
-	public static String addLabel(HashMap<String, SymbolValue> symbolTable) {
+	public static String addLabel(Proc proc) {
 		String name = "L" + LABEL_COUNTER++;
-		symbolTable.put(name,
+		proc.symbolTable().put(name,
 				new SymbolValue(name, null, SymbolType.LABEL, null));
 		return name;
 	}
@@ -137,15 +139,16 @@ class SymbolValue {
 	 * returns null as error if found. Otherwise, adds the parameter with the
 	 * given offset as address. Returns the parameter name if added.
 	 */
-	public static String addParam(HashMap<String, SymbolValue> symbolTable,
-			String param, int offset) {
+	public static String addParam(Proc proc,
+			HashMap<String, SymbolValue> consts, String param) {
 		// if already defined, return null (as error)
-		if (symbolTable.containsKey(param))
+		if (proc.symbolTable().containsKey(param))
 			return null;
 		
-		// offset goes to address
-		symbolTable.put(param, new SymbolValue(param, null, SymbolType.PARAM,
-				offset));
+		int offset = proc.getOffsetAndIncrement();
+		updateConst(consts, offset);
+		proc.symbolTable().put(param, new SymbolValue(param, null,
+				SymbolType.PARAM, offset));
 		return param;
 	}
 
@@ -153,11 +156,14 @@ class SymbolValue {
 	 * Checks if the given variable name exists in the symbol table, and adds it
 	 * if not. Returns the variable name.
 	 */
-	public static String updateVar(HashMap<String, SymbolValue> symbolTable,
-			String var) {
-		if (!symbolTable.containsKey(var))
-			symbolTable.put(var,
-					new SymbolValue(var, null, SymbolType.VAR, null));
+	public static String updateVar(Proc proc,
+			HashMap<String, SymbolValue> consts, String var) {
+		if (!proc.symbolTable().containsKey(var)) {
+			int offset = proc.getOffsetAndIncrement();
+			updateConst(consts, offset);
+			proc.symbolTable().put(var,
+					new SymbolValue(var, null, SymbolType.VAR, offset));
+		}
 		return var;
 	}
 
@@ -167,7 +173,7 @@ class SymbolValue {
 	 * corresponding to their values (e.g. 23 will be named TWO_THREE). Returns
 	 * the name of the symbol table entry key.
 	 */
-	public static String updateConst(HashMap<String, SymbolValue> symbolTable,
+	public static String updateConst(HashMap<String, SymbolValue> consts,
 			int value) {
 		// map value to corresponding name
 		String name = "";
@@ -183,8 +189,8 @@ class SymbolValue {
 		}
 
 		// if name does not exist in symbol table, create entry
-		if (!symbolTable.containsKey(name))
-			symbolTable.put(name,
+		if (!consts.containsKey(name))
+			consts.put(name,
 					new SymbolValue(name, value, SymbolType.CONST, null));
 
 		return name;
@@ -262,31 +268,102 @@ class Instruction {
 	 *         get the argument as an offset from FP.
 	 */
 	public LinkedList<Instruction> getInstructionsFor(
-			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
-			String label, InstructionType type, String arg) {
-		// determine whether arg is const/sp/fp/buff -- use absolute address,
-		// or var/param/temp -- use relative address
+			HashMap<String, SymbolValue> consts, Proc proc, String label,
+			InstructionType type, String arg) {
+		// determine whether to use absolute addresses or relative ones
 		boolean absolute =
+				// constant
 				consts.containsKey(arg) ||
+				// one of SP / FP / buffers
 				arg == Program.SP_ADDR ||
 				arg == Program.FP_ADDR ||
-				arg == Program.BUFF_ADDR;
+				arg == Program.BUFF1_ADDR ||
+				arg == Program.BUFF2_ADDR ||
+				// instructions that address labels straightforwardly
+				type == InstructionType.JMP ||
+				type == InstructionType.JMZ ||
+				type == InstructionType.JMN ||
+				// instructions with no arguments
+				type == InstructionType.CAL ||
+				type == InstructionType.HLT ||
+				type == InstructionType.NONE;
+		
 		LinkedList<Instruction> res = new LinkedList<>();
+		
 		if (absolute) {
 			// apply the instruction straightforwardly
 			res.add(new Instruction(type, arg, label));
 		}
 		else {
-			// calculate absolute address from FP + offset			
+			// backup the current value of AC to BUFF2 (not required for
+			// LDA and LDI but done in any case)
+			// STA BUFF2
+			res.add(new Instruction(InstructionType.STA, Program.BUFF2_ADDR));
+			// calculate absolute address from FP + offset
 			// LDA FP
 			res.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
-			int offset = symbolTable.get(arg).addr();
-			String offsetStr = SymbolValue.updateConst(consts, offset);
 			// ADD <offset>
+			int offset = proc.symbolTable().get(arg).addr();
+			String offsetStr = SymbolValue.updateConst(consts, offset);
 			res.add(new Instruction(InstructionType.ADD, offsetStr));
-			// STA BUFF
-			res.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+			// STA BUFF1
+			res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+			
+			switch (type) {
+			case LDA:
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				break;
+			case LDI:
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				break;
+			case STA:
+				res.add(new Instruction(InstructionType.LDA, Program.BUFF2_ADDR));
+				res.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
+				break;
+			case STI:
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDA, Program.BUFF2_ADDR));
+				res.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
+				break;
+			case ADD:
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.ADD, Program.BUFF2_ADDR));
+				break;
+			case SUB:
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDA, Program.BUFF2_ADDR));
+				res.add(new Instruction(InstructionType.SUB, Program.BUFF1_ADDR));
+				break;
+			case MUL:
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.MUL, Program.BUFF2_ADDR));
+				break;
+			case JMP:
+				// never gets here
+				break;
+			case JMI:
+				res.add(new Instruction(InstructionType.JMI, Program.BUFF1_ADDR));
+				break;
+			case JMZ:
+				// never gets here
+				break;
+			case JMN:
+				// never gets here
+				break;
+			case CAL:
+				// never gets here
+				break;
+			case HLT:
+				// never gets here
+				break;
+			case NONE:
+				// never gets here
+				break;
+			}
 		}
 		return res;
 	}
@@ -403,7 +480,7 @@ abstract class Component {
 
 	public abstract LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable);
 }
 
@@ -418,13 +495,13 @@ abstract class Expr extends Component {
 	public static LinkedList<Instruction> getBinaryOpInsts(Expr expr1,
 			Expr expr2, InstructionType op,
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// translate two sub-expressions
-		LinkedList<Instruction> code1 = expr1.translate(consts, symbolTable,
+		LinkedList<Instruction> code1 = expr1.translate(consts, proc,
 				functionTable);
-		LinkedList<Instruction> code2 = expr2.translate(consts, symbolTable,
+		LinkedList<Instruction> code2 = expr2.translate(consts, proc,
 				functionTable);
 		String t1 = code1.getLast().arg();
 		String t2 = code2.getLast().arg();
@@ -434,12 +511,12 @@ abstract class Expr extends Component {
 		// code2 (T2)
 		res.addAll(code2);
 		// LDA T1
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t1));
+		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), t1));
 		// OP T2
 		res.add(new Instruction(op, t2));
 		// ST t3
-		res.add(new Instruction(InstructionType.STA, SymbolValue
-				.addTemp(symbolTable)));
+		res.add(new Instruction(InstructionType.STA, SymbolValue.addTemp(proc,
+				consts)));
 		return res;
 	}
 }
@@ -455,15 +532,15 @@ class Ident extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA IDENT
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable,
-				SymbolValue.updateVar(symbolTable, name)));
+		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(),
+				SymbolValue.updateVar(proc, consts, name)));
 		// STA t_n
 		res.add(new Instruction(InstructionType.STA, SymbolValue
-				.addTemp(symbolTable)));
+				.addTemp(proc, consts)));
 		return res;
 	}
 }
@@ -483,15 +560,15 @@ class Number extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA NUMBER
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable, SymbolValue.updateConst(
-				consts, value)));
+		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(),
+				SymbolValue.updateConst(consts, value)));
 		// STA t_n
 		res.add(new Instruction(InstructionType.STA, SymbolValue
-				.addTemp(symbolTable)));
+				.addTemp(proc, consts)));
 		return res;
 	}
 }
@@ -508,10 +585,10 @@ class Times extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.MUL, consts,
-				symbolTable, functionTable);
+				proc, functionTable);
 	}
 }
 
@@ -527,10 +604,10 @@ class Plus extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.ADD, consts,
-				symbolTable, functionTable);
+				proc, functionTable);
 	}
 }
 
@@ -546,10 +623,10 @@ class Minus extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.SUB, consts,
-				symbolTable, functionTable);
+				proc, functionTable);
 	}
 }
 
@@ -566,15 +643,15 @@ class FunctionCall extends Expr {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		
 		LinkedList<Instruction> insts = new LinkedList<>();
 		// get the relevant procedure and record size
-		Proc proc = functionTable.get(funcid);
-		int size = proc.getActivationRecordSize();
+		Proc procToCall = functionTable.get(funcid);
+		int size = procToCall.getActivationRecordSize();
 		// make sure number of parameters fits
-		if (proc.numParams() != explist.getExpressions().size()) {
+		if (procToCall.numParams() != explist.getExpressions().size()) {
 			System.err.println("Param count does not match");
 			System.exit(-1);
 		}
@@ -596,12 +673,12 @@ class FunctionCall extends Expr {
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
 		// STA BUFF
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
 		// store current FP in prev_FP address
 		// LDA FP
 		insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
 		// STI BUFF
-		insts.add(new Instruction(InstructionType.STI, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
 		
 		// update FP (which is current SP)
 		// LDA SP
@@ -625,7 +702,7 @@ class FunctionCall extends Expr {
 		int offset = 1;
 		String offsetStr;
 		for (Expr e: explist.getExpressions()) {
-			exprInsts = e.translate(consts, symbolTable, functionTable);
+			exprInsts = e.translate(consts, proc, functionTable);
 			arg = exprInsts.getLast().arg();
 			// add all expr instructions
 			insts.addAll(exprInsts);
@@ -637,11 +714,11 @@ class FunctionCall extends Expr {
 			offset++;
 			insts.add(new Instruction(InstructionType.ADD, offsetStr));
 			// STA BUFF
-			insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
 			// LDA arg (the value of the expression)
 			insts.add(new Instruction(InstructionType.LDA, arg));
 			// STI BUFF (store arg value in FP + offset)
-			insts.add(new Instruction(InstructionType.STI, Program.BUFF_ADDR));
+			insts.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
 		}
 		
 		// --- call the procedure (implicitly stores return address in SP) ---
@@ -661,11 +738,11 @@ class FunctionCall extends Expr {
 		// SUB 2
 		insts.add(new Instruction(InstructionType.SUB, two));
 		// STA BUFF
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
 		// LDI BUFF
-		insts.add(new Instruction(InstructionType.LDI, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
 		// STA <res>
-		String res = SymbolValue.addTemp(symbolTable);
+		String res = SymbolValue.addTemp(proc, consts);
 		insts.add(new Instruction(InstructionType.STA, res));
 		
 		// --- revert to old SP and FP ---
@@ -676,9 +753,9 @@ class FunctionCall extends Expr {
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
 		// STA BUFF
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
 		// LDI BUFF
-		insts.add(new Instruction(InstructionType.LDI, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
 		// STA FP
 		insts.add(new Instruction(InstructionType.STA, Program.FP_ADDR));
 		
@@ -693,7 +770,7 @@ class FunctionCall extends Expr {
 		// make sure the returned value is the argument of the last instruction
 		// of this function call. done arbitrarily using LDA
 		// LDA <res>
-		insts.addAll(Instruction.getLDAInsts(consts, symbolTable, res));
+		insts.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), res));
 		
 		return insts;
 	}
@@ -726,7 +803,7 @@ class DefineStatement extends Statement {
 	 */
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		return null;
 	}
@@ -743,12 +820,12 @@ class ReturnStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 
 		LinkedList<Instruction> insts = new LinkedList<>();
 		// calculate return value expression
-		LinkedList<Instruction> resInsts = expr.translate(consts, symbolTable,
+		LinkedList<Instruction> resInsts = expr.translate(consts, proc,
 				functionTable);
 		String ret = resInsts.getLast().arg();
 		// add all expr instructions
@@ -761,11 +838,11 @@ class ReturnStatement extends Statement {
 		String two = SymbolValue.updateConst(consts, 2);
 		insts.add(new Instruction(InstructionType.SUB, two));
 		// STA BUFF
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
 		// LDA <ret>
-		insts.addAll(Instruction.getLDAInsts(consts, symbolTable, ret));
+		insts.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), ret));
 		// STI BUFF
-		insts.add(new Instruction(InstructionType.STI, Program.BUFF_ADDR));
+		insts.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
 		
 		// jump indirectly to SP (that holds return address)
 		// JMI SP
@@ -788,19 +865,19 @@ class AssignStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
-		LinkedList<Instruction> exprCode = expr.translate(consts, symbolTable,
+		LinkedList<Instruction> exprCode = expr.translate(consts, proc,
 				functionTable);
 		String t = exprCode.getLast().arg();
 		// expr code
 		res.addAll(exprCode);
 		// LDA t
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
+		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), t));
 		// STA IDENT
 		res.add(new Instruction(InstructionType.STA, SymbolValue.updateVar(
-				symbolTable, name)));
+				proc, consts, name)));
 		return res;
 	}
 }
@@ -824,30 +901,30 @@ class IfStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// code_e
-		LinkedList<Instruction> cond = expr.translate(consts, symbolTable,
+		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
 		String t = cond.getLast().arg();
 		res.addAll(cond);
 		// LDA t
 		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
 		// JMN L1
-		String l1 = SymbolValue.addLabel(symbolTable);
+		String l1 = SymbolValue.addLabel(proc);
 		res.add(new Instruction(InstructionType.JMN, l1));
 		// JMZ L1
 		res.add(new Instruction(InstructionType.JMZ, l1));
 		// code1
-		LinkedList<Instruction> code1 = stmtlist1.translate(consts, symbolTable,
+		LinkedList<Instruction> code1 = stmtlist1.translate(consts, proc,
 				functionTable);
 		res.addAll(code1);
 		// JMP L2
-		String l2 = SymbolValue.addLabel(symbolTable);
+		String l2 = SymbolValue.addLabel(proc);
 		res.add(new Instruction(InstructionType.JMP, l2));
 		// L1: code2
-		LinkedList<Instruction> code2 = stmtlist2.translate(consts, symbolTable,
+		LinkedList<Instruction> code2 = stmtlist2.translate(consts, proc,
 				functionTable);
 		code2.getFirst().setLabel(l1);
 		res.addAll(code2);
@@ -870,12 +947,12 @@ class WhileStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// L1: code_e
-		String l1 = SymbolValue.addLabel(symbolTable);
-		LinkedList<Instruction> cond = expr.translate(consts, symbolTable,
+		String l1 = SymbolValue.addLabel(proc);
+		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
 		cond.getFirst().setLabel(l1);
 		String t = cond.getLast().arg();
@@ -883,12 +960,12 @@ class WhileStatement extends Statement {
 		// LDA t
 		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
 		// JMN L2
-		String l2 = SymbolValue.addLabel(symbolTable);
+		String l2 = SymbolValue.addLabel(proc);
 		res.add(new Instruction(InstructionType.JMN, l2));
 		// JMZ L2
 		res.add(new Instruction(InstructionType.JMZ, l2));
 		// code_s
-		LinkedList<Instruction> body = stmtlist.translate(consts, symbolTable,
+		LinkedList<Instruction> body = stmtlist.translate(consts, proc,
 				functionTable);
 		res.addAll(body);
 		// JMP L1
@@ -912,24 +989,24 @@ class RepeatStatement extends Statement {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// L1: code_s
-		String l1 = SymbolValue.addLabel(symbolTable);
-		LinkedList<Instruction> body = stmtlist.translate(consts, symbolTable,
+		String l1 = SymbolValue.addLabel(proc);
+		LinkedList<Instruction> body = stmtlist.translate(consts, proc,
 				functionTable);
 		body.getFirst().setLabel(l1);
 		res.addAll(body);
 		// code_e
-		LinkedList<Instruction> cond = expr.translate(consts, symbolTable,
+		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
 		String t = cond.getLast().arg();
 		res.addAll(cond);
 		// LDA t
 		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
 		// JMN L2
-		String l2 = SymbolValue.addLabel(symbolTable);
+		String l2 = SymbolValue.addLabel(proc);
 		res.add(new Instruction(InstructionType.JMN, l2));
 		// JMZ L2
 		res.add(new Instruction(InstructionType.JMZ, l2));
@@ -1019,11 +1096,11 @@ class StatementList extends Component {
 	@Override
 	public LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
+			Proc proc,
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		for (Statement stmt : statementlist)
-			res.addAll(stmt.translate(consts, symbolTable,functionTable));
+			res.addAll(stmt.translate(consts, proc, functionTable));
 		return res;
 	}
 }
@@ -1072,10 +1149,8 @@ class Proc {
 		
 		String assigned;
 		for (String param: parameterlist.getParamList()) {
-			// add offset to constants
-			SymbolValue.updateConst(consts, offsetCounter);
 			// add parameter
-			assigned = SymbolValue.addParam(symbolTable, param, offsetCounter);
+			assigned = SymbolValue.addParam(this, consts, param);
 			// increase offset
 			offsetCounter++;
 			if (assigned == null) {
@@ -1086,7 +1161,7 @@ class Proc {
 		
 		// --- add body instructions ---
 		for (Statement s: stmtlist.getStatements())
-			insts.addAll(s.translate(consts, symbolTable, functionTable));
+			insts.addAll(s.translate(consts, this, functionTable));
 		
 		// add HLT to end of "main" procedure ONLY
 		if (isMain)
@@ -1176,6 +1251,22 @@ class Proc {
 	public Integer getActivationRecordSize() {
 		return activationRecordSize;
 	}
+	
+	/**
+	 * @return the procedure's symbol table.
+	 */
+	public HashMap<String, SymbolValue> symbolTable() {
+		return symbolTable;
+	}
+	
+	/**
+	 * @return the value of the offset prior to incrementing it.
+	 */
+	public int getOffsetAndIncrement() {
+		int currOffset = offsetCounter;
+		offsetCounter++;
+		return currOffset;
+	}
 }
 
 class Program {
@@ -1194,7 +1285,8 @@ class Program {
 	// global SP and FP
 	public static String SP_ADDR = "1";
 	public static String FP_ADDR = "2";
-	public static String BUFF_ADDR = "3";
+	public static String BUFF1_ADDR = "3";
+	public static String BUFF2_ADDR = "4";
 	
 	public Program(StatementList list, int initSP, int initFP) {
 		stmtlist = list;
