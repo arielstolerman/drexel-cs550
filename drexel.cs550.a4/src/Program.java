@@ -828,23 +828,31 @@ class ReturnStatement extends Statement {
 		insts.addAll(resInsts);
 		
 		// store result in return value address
+		// first load <ret> and store in BUFF1
+		// LDA <ret>
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, ret));
+		// STA BUFF1
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+		// now calculate address for return value and store it in BUFF2
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
 		// SUB 2
 		String two = SymbolValue.updateConst(consts, 2);
 		insts.add(new Instruction(InstructionType.SUB, two));
-		// STA BUFF
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+		// STA BUFF2
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF2_ADDR));
+		// finally load <ret> from BUFF1 and store (indirect) in BUFF2
 		// LDA <ret>
-		insts.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), ret));
-		// STI BUFF
-		insts.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.BUFF1_ADDR));
+		// STI BUFF2
+		insts.add(new Instruction(InstructionType.STI, Program.BUFF2_ADDR));
 		
 		// jump indirectly to SP (that holds return address)
 		// JMI SP
 		insts.add(new Instruction(InstructionType.JMI, Program.SP_ADDR));
 		
-		return null;
+		return insts;
 	}
 }
 
@@ -863,18 +871,19 @@ class AssignStatement extends Statement {
 			HashMap<String, SymbolValue> consts,
 			Proc proc,
 			SortedMap<String, Proc> functionTable) {
-		LinkedList<Instruction> res = new LinkedList<>();
+		LinkedList<Instruction> insts = new LinkedList<>();
 		LinkedList<Instruction> exprCode = expr.translate(consts, proc,
 				functionTable);
 		String t = exprCode.getLast().arg();
 		// expr code
-		res.addAll(exprCode);
+		insts.addAll(exprCode);
 		// LDA t
-		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), t));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, t));
 		// STA IDENT
-		res.add(new Instruction(InstructionType.STA, SymbolValue.updateVar(
-				proc, consts, name)));
-		return res;
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.STA, SymbolValue.updateVar(proc, consts, name)));
+		return insts;
 	}
 }
 
@@ -899,34 +908,39 @@ class IfStatement extends Statement {
 			HashMap<String, SymbolValue> consts,
 			Proc proc,
 			SortedMap<String, Proc> functionTable) {
-		LinkedList<Instruction> res = new LinkedList<>();
+		LinkedList<Instruction> insts = new LinkedList<>();
 		// code_e
 		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
 		String t = cond.getLast().arg();
-		res.addAll(cond);
+		insts.addAll(cond);
 		// LDA t
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, t));
 		// JMN L1
 		String l1 = SymbolValue.addLabel(proc);
-		res.add(new Instruction(InstructionType.JMN, l1));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMN, l1));
 		// JMZ L1
-		res.add(new Instruction(InstructionType.JMZ, l1));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMZ, l1));
 		// code1
 		LinkedList<Instruction> code1 = stmtlist1.translate(consts, proc,
 				functionTable);
-		res.addAll(code1);
+		insts.addAll(code1);
 		// JMP L2
 		String l2 = SymbolValue.addLabel(proc);
-		res.add(new Instruction(InstructionType.JMP, l2));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMP, l2));
 		// L1: code2
 		LinkedList<Instruction> code2 = stmtlist2.translate(consts, proc,
 				functionTable);
 		code2.getFirst().setLabel(l1);
-		res.addAll(code2);
+		insts.addAll(code2);
 		// L2:
-		res.add(new Instruction(l2));
-		return res;
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, l2,
+				InstructionType.NONE, null));
+		return insts;
 	}
 }
 
@@ -945,30 +959,35 @@ class WhileStatement extends Statement {
 			HashMap<String, SymbolValue> consts,
 			Proc proc,
 			SortedMap<String, Proc> functionTable) {
-		LinkedList<Instruction> res = new LinkedList<>();
+		LinkedList<Instruction> insts = new LinkedList<>();
 		// L1: code_e
 		String l1 = SymbolValue.addLabel(proc);
 		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
 		cond.getFirst().setLabel(l1);
 		String t = cond.getLast().arg();
-		res.addAll(cond);
+		insts.addAll(cond);
 		// LDA t
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, t));
 		// JMN L2
 		String l2 = SymbolValue.addLabel(proc);
-		res.add(new Instruction(InstructionType.JMN, l2));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMN, l2));
 		// JMZ L2
-		res.add(new Instruction(InstructionType.JMZ, l2));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMZ, l2));
 		// code_s
 		LinkedList<Instruction> body = stmtlist.translate(consts, proc,
 				functionTable);
-		res.addAll(body);
+		insts.addAll(body);
 		// JMP L1
-		res.add(new Instruction(InstructionType.JMP, l1));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMP, l1));
 		// L2:
-		res.add(new Instruction(l2));
-		return res;
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, l2,
+				InstructionType.NONE, null));
+		return insts;
 	}
 }
 
@@ -987,30 +1006,35 @@ class RepeatStatement extends Statement {
 			HashMap<String, SymbolValue> consts,
 			Proc proc,
 			SortedMap<String, Proc> functionTable) {
-		LinkedList<Instruction> res = new LinkedList<>();
+		LinkedList<Instruction> insts = new LinkedList<>();
 		// L1: code_s
 		String l1 = SymbolValue.addLabel(proc);
 		LinkedList<Instruction> body = stmtlist.translate(consts, proc,
 				functionTable);
 		body.getFirst().setLabel(l1);
-		res.addAll(body);
+		insts.addAll(body);
 		// code_e
 		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
 		String t = cond.getLast().arg();
-		res.addAll(cond);
+		insts.addAll(cond);
 		// LDA t
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, t));
 		// JMN L2
 		String l2 = SymbolValue.addLabel(proc);
-		res.add(new Instruction(InstructionType.JMN, l2));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMN, l2));
 		// JMZ L2
-		res.add(new Instruction(InstructionType.JMZ, l2));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMZ, l2));
 		// JMP L1
-		res.add(new Instruction(InstructionType.JMP, l1));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.JMP, l1));
 		// L2:
-		res.add(new Instruction(l2));
-		return res;
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, l2,
+				InstructionType.NONE, null));
+		return insts;
 	}
 }
 
