@@ -267,7 +267,7 @@ class Instruction {
 	 *         one instruction. Otherwise, constructs the set of instructions to
 	 *         get the argument as an offset from FP.
 	 */
-	public LinkedList<Instruction> getInstructionsFor(
+	public static LinkedList<Instruction> getInstructionsFor(
 			HashMap<String, SymbolValue> consts, Proc proc, String label,
 			InstructionType type, String arg) {
 		// determine whether to use absolute addresses or relative ones
@@ -426,34 +426,6 @@ class Instruction {
 		return arg;
 	}
 	
-	/**
-	 * Constructs the required LDA commands: if the argument is NOT in the 
-	 * symbol table (a constant, SP, FP etc.) adds a simple LDA command.
-	 * Otherwise, loads using SP + offset.
-	 * @param consts
-	 * @param symbolTable
-	 * @param arg
-	 * @return
-	 */
-	/*public static LinkedList<Instruction> getLDAInsts(
-			HashMap<String, SymbolValue> consts,
-			HashMap<String, SymbolValue> symbolTable,
-			String arg) {
-		LinkedList<Instruction> res = new LinkedList<>();
-		if (consts.containsKey(arg)) {
-			// LDA <arg>
-			res.add(new Instruction(InstructionType.LDA, arg));
-		}
-		else {
-			// LDA SP
-			res.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
-			// ADD <offset>
-			res.add(new Instruction(InstructionType.ADD, arg));
-		}
-		return res;
-	}
-	*/
-	
 	// setters
 	
 	public void setLine(int line) {
@@ -511,12 +483,13 @@ abstract class Expr extends Component {
 		// code2 (T2)
 		res.addAll(code2);
 		// LDA T1
-		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), t1));
+		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, t1));
 		// OP T2
-		res.add(new Instruction(op, t2));
+		res.addAll(Instruction.getInstructionsFor(consts, proc, null, op, t2));
 		// ST t3
-		res.add(new Instruction(InstructionType.STA, SymbolValue.addTemp(proc,
-				consts)));
+		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.STA, SymbolValue.addTemp(proc,consts)));
 		return res;
 	}
 }
@@ -536,11 +509,11 @@ class Ident extends Expr {
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA IDENT
-		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(),
-				SymbolValue.updateVar(proc, consts, name)));
+		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, SymbolValue.updateVar(proc, consts, name)));
 		// STA t_n
-		res.add(new Instruction(InstructionType.STA, SymbolValue
-				.addTemp(proc, consts)));
+		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.STA, SymbolValue.addTemp(proc, consts)));
 		return res;
 	}
 }
@@ -564,11 +537,11 @@ class Number extends Expr {
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA NUMBER
-		res.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(),
-				SymbolValue.updateConst(consts, value)));
+		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, SymbolValue.updateConst(consts, value)));
 		// STA t_n
-		res.add(new Instruction(InstructionType.STA, SymbolValue
-				.addTemp(proc, consts)));
+		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.STA, SymbolValue.addTemp(proc, consts)));
 		return res;
 	}
 }
@@ -656,13 +629,22 @@ class FunctionCall extends Expr {
 			System.exit(-1);
 		}
 		
+		// --- calculate all parameter expressions (stored in temps) ---
+		LinkedList<Instruction> exprInsts;
+		LinkedList<String> paramTemps = new LinkedList<>();
+		for (Expr e: explist.getExpressions()) {
+			exprInsts = e.translate(consts, proc, functionTable);
+			insts.addAll(exprInsts);
+			paramTemps.add(exprInsts.getLast().arg());
+		}
+		
+		// --- update FP & SP ---
+		
 		// update constants table with the size of the callee's activation
 		// record and fetch constants "1" and "2" for calculations
 		String sizeStr = SymbolValue.updateConst(consts, size);
 		String one = SymbolValue.updateConst(consts, 1);
 		String two = SymbolValue.updateConst(consts, 2);
-		
-		// --- update FP & SP ---
 		
 		// calculate prev_FP position (SP + size - 1) in new activation record
 		// and store FP to it
@@ -672,12 +654,12 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.ADD, sizeStr));
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
-		// STA BUFF
+		// STA BUFF1
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
 		// store current FP in prev_FP address
 		// LDA FP
 		insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
-		// STI BUFF
+		// STI BUFF1
 		insts.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
 		
 		// update FP (which is current SP)
@@ -696,16 +678,27 @@ class FunctionCall extends Expr {
 		
 		// --- calculate and store parameters ---
 		
-		// calculate and add all parameters
-		LinkedList<Instruction> exprInsts;
-		String arg;
-		int offset = 1;
+		// set all callee parameters in callee activation record
+		int offset = 1; // parameter offsets always start at 1
 		String offsetStr;
-		for (Expr e: explist.getExpressions()) {
-			exprInsts = e.translate(consts, proc, functionTable);
-			arg = exprInsts.getLast().arg();
-			// add all expr instructions
-			insts.addAll(exprInsts);
+		for (String paramTemp: paramTemps) {
+			// calculate value to set, by accessing the absolute address of paramTemp
+			// calculated from prev_FP (= curr SP - 1) + temp's offset
+			// LDA SP
+			insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+			// SUB 1
+			insts.add(new Instruction(InstructionType.SUB, one));
+			// STA BUFF1 (BUFF1 now contains address of prev_FP)
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+			// LDI BUFF1
+			insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+			// ADD <temp-offset>
+			offsetStr = SymbolValue.updateConst(consts,
+					proc.symbolTable().get(paramTemp).addr());
+			insts.add(new Instruction(InstructionType.ADD, offsetStr));
+			// STA BUFF1 (BUFF1 now contains address of param's temp value)
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+			
 			// calculate absolute address for current parameter
 			// LDA FP
 			insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
@@ -713,12 +706,14 @@ class FunctionCall extends Expr {
 			offsetStr = SymbolValue.updateConst(consts, offset);
 			offset++;
 			insts.add(new Instruction(InstructionType.ADD, offsetStr));
-			// STA BUFF
-			insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
-			// LDA arg (the value of the expression)
-			insts.add(new Instruction(InstructionType.LDA, arg));
-			// STI BUFF (store arg value in FP + offset)
-			insts.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
+			// STA BUFF2
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF2_ADDR));
+			
+			// load temp value and store it in activation record
+			// LDI BUFF1
+			insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+			// STI BUFF2
+			insts.add(new Instruction(InstructionType.STI, Program.BUFF2_ADDR));
 		}
 		
 		// --- call the procedure (implicitly stores return address in SP) ---
@@ -726,7 +721,7 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.CAL, null));
 		
 		// ---------------------------------------------------------------------
-		// callee procedure works
+		// callee procedure is running...
 		// returns to the following instruction(s) with the return value
 		// updated in its activation record
 		// ---------------------------------------------------------------------
@@ -737,9 +732,9 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
 		// SUB 2
 		insts.add(new Instruction(InstructionType.SUB, two));
-		// STA BUFF
+		// STA BUFF1
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
-		// LDI BUFF
+		// LDI BUFF1
 		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
 		// STA <res>
 		String res = SymbolValue.addTemp(proc, consts);
@@ -752,9 +747,9 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
-		// STA BUFF
+		// STA BUFF1
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
-		// LDI BUFF
+		// LDI BUFF1
 		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
 		// STA FP
 		insts.add(new Instruction(InstructionType.STA, Program.FP_ADDR));
@@ -770,7 +765,8 @@ class FunctionCall extends Expr {
 		// make sure the returned value is the argument of the last instruction
 		// of this function call. done arbitrarily using LDA
 		// LDA <res>
-		insts.addAll(Instruction.getLDAInsts(consts, proc.symbolTable(), res));
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+				InstructionType.LDA, res));
 		
 		return insts;
 	}
