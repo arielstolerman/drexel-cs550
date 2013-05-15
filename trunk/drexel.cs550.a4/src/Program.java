@@ -1422,9 +1422,9 @@ class Program {
 	 */
 	public void dump() {
 		// translated (symbolic)
-		dump(TRANS_PATH, trans, symbolTable, false);
+		dump(TRANS_PATH, false);
 		// translated (linked)
-		dump(TRANS_LINK_PATH, trans, symbolTable, true);
+		dump(TRANS_LINK_PATH, true);
 	}
 	
 	/**
