@@ -23,7 +23,8 @@ parser code {:
 		}
 		catch(Exception ex)
 		{
-			System.out.println("Exception: " + ex.getMessage());
+			System.err.println("Exception: " + ex.getMessage());
+			ex.printStackTrace();
 			System.exit(-1);
 		}
 	}
