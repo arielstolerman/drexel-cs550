@@ -274,10 +274,10 @@ class Instruction {
 				// constant
 				consts.containsKey(arg) ||
 				// one of SP / FP / buffers
-				arg == Program.SP_ADDR ||
-				arg == Program.FP_ADDR ||
-				arg == Program.BUFF1_ADDR ||
-				arg == Program.BUFF2_ADDR ||
+				arg == Program.SP ||
+				arg == Program.FP ||
+				arg == Program.BUFF1 ||
+				arg == Program.BUFF2 ||
 				// instructions that address labels straightforwardly
 				type == InstructionType.JMP ||
 				type == InstructionType.JMZ ||
@@ -297,55 +297,55 @@ class Instruction {
 			// backup the current value of AC to BUFF2 (not required for
 			// LDA and LDI but done in any case)
 			// STA BUFF2
-			res.add(new Instruction(InstructionType.STA, Program.BUFF2_ADDR));
+			res.add(new Instruction(InstructionType.STA, Program.BUFF2));
 			// calculate absolute address from FP + offset
 			// LDA FP
-			res.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
+			res.add(new Instruction(InstructionType.LDA, Program.FP));
 			// ADD <offset>
 			int offset = proc.symbolTable().get(arg).addr();
 			String offsetStr = SymbolValue.updateConst(consts, offset);
 			res.add(new Instruction(InstructionType.ADD, offsetStr));
 			// STA BUFF1
-			res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+			res.add(new Instruction(InstructionType.STA, Program.BUFF1));
 			
 			switch (type) {
 			case LDA:
-				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1));
 				break;
 			case LDI:
-				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1));
+				res.add(new Instruction(InstructionType.STA, Program.BUFF1));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1));
 				break;
 			case STA:
-				res.add(new Instruction(InstructionType.LDA, Program.BUFF2_ADDR));
-				res.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDA, Program.BUFF2));
+				res.add(new Instruction(InstructionType.STI, Program.BUFF1));
 				break;
 			case STI:
-				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.LDA, Program.BUFF2_ADDR));
-				res.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1));
+				res.add(new Instruction(InstructionType.STA, Program.BUFF1));
+				res.add(new Instruction(InstructionType.LDA, Program.BUFF2));
+				res.add(new Instruction(InstructionType.STI, Program.BUFF1));
 				break;
 			case ADD:
-				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.ADD, Program.BUFF2_ADDR));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1));
+				res.add(new Instruction(InstructionType.ADD, Program.BUFF2));
 				break;
 			case SUB:
-				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.LDA, Program.BUFF2_ADDR));
-				res.add(new Instruction(InstructionType.SUB, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1));
+				res.add(new Instruction(InstructionType.STA, Program.BUFF1));
+				res.add(new Instruction(InstructionType.LDA, Program.BUFF2));
+				res.add(new Instruction(InstructionType.SUB, Program.BUFF1));
 				break;
 			case MUL:
-				res.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
-				res.add(new Instruction(InstructionType.MUL, Program.BUFF2_ADDR));
+				res.add(new Instruction(InstructionType.LDI, Program.BUFF1));
+				res.add(new Instruction(InstructionType.MUL, Program.BUFF2));
 				break;
 			case JMP:
 				// never gets here
 				break;
 			case JMI:
-				res.add(new Instruction(InstructionType.JMI, Program.BUFF1_ADDR));
+				res.add(new Instruction(InstructionType.JMI, Program.BUFF1));
 				break;
 			case JMZ:
 				// never gets here
@@ -371,7 +371,8 @@ class Instruction {
 	 * Returns the string representation of the instruction. If the linked
 	 * parameter is true, returns the final address as the instruction argument.
 	 */
-	public String toString(HashMap<String, SymbolValue> consts,
+	public String toString(HashMap<String, Integer> aux,
+			HashMap<String, SymbolValue> consts,
 			HashMap<String, SymbolValue> symbolTable,
 			SortedMap<String, Proc> functionTable, boolean linked) {		
 		// add label if exists
@@ -388,7 +389,10 @@ class Instruction {
 		// add argument if exists
 		if (arg != null) {
 			if (linked) {
-				if (symbolTable.containsKey(arg))
+				if (aux.containsKey(arg))
+					// SP / FP / BUFF1 / BUFF2
+					res += " " + aux.get(arg);
+				else if (symbolTable.containsKey(arg))
 					// parameter, variable, temporary
 					res += " " + symbolTable.get(arg).addr();
 				else if (consts.containsKey(arg))
@@ -409,11 +413,7 @@ class Instruction {
 		}
 		// semicolon
 		if (type != InstructionType.NONE)
-		{
 			res += " ;";
-			if (line != null)
-				res += " (line " + line + ")";
-		}
 		return res;
 	}
 
@@ -658,32 +658,32 @@ class FunctionCall extends Expr {
 		// calculate prev_FP position (SP + size - 1) in new activation record
 		// and store FP to it
 		// LDA SP
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.SP));
 		// ADD <size>
 		insts.add(new Instruction(InstructionType.ADD, sizeStr));
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
 		// STA BUFF1
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		// store current FP in prev_FP address
 		// LDA FP
-		insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.FP));
 		// STI BUFF1
-		insts.add(new Instruction(InstructionType.STI, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.STI, Program.BUFF1));
 		
 		// update FP (which is current SP)
 		// LDA SP
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.SP));
 		// STA FP
-		insts.add(new Instruction(InstructionType.STA, Program.FP_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.FP));
 		
 		// update SP (which is current SP + <size>)
 		// LDA SP
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.SP));
 		// ADD <size>
 		insts.add(new Instruction(InstructionType.ADD, sizeStr));
 		// STA SP
-		insts.add(new Instruction(InstructionType.STA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.SP));
 		
 		// --- calculate and store parameters ---
 		
@@ -694,35 +694,35 @@ class FunctionCall extends Expr {
 			// calculate value to set, by accessing the absolute address of paramTemp
 			// calculated from prev_FP (= curr SP - 1) + temp's offset
 			// LDA SP
-			insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+			insts.add(new Instruction(InstructionType.LDA, Program.SP));
 			// SUB 1
 			insts.add(new Instruction(InstructionType.SUB, one));
 			// STA BUFF1 (BUFF1 now contains address of prev_FP)
-			insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 			// LDI BUFF1
-			insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+			insts.add(new Instruction(InstructionType.LDI, Program.BUFF1));
 			// ADD <temp-offset>
 			offsetStr = SymbolValue.updateConst(consts,
 					proc.symbolTable().get(paramTemp).addr());
 			insts.add(new Instruction(InstructionType.ADD, offsetStr));
 			// STA BUFF1 (BUFF1 now contains address of param's temp value)
-			insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 			
 			// calculate absolute address for current parameter
 			// LDA FP
-			insts.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
+			insts.add(new Instruction(InstructionType.LDA, Program.FP));
 			// ADD <offset>
 			offsetStr = SymbolValue.updateConst(consts, offset);
 			offset++;
 			insts.add(new Instruction(InstructionType.ADD, offsetStr));
 			// STA BUFF2
-			insts.add(new Instruction(InstructionType.STA, Program.BUFF2_ADDR));
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF2));
 			
 			// load temp value and store it in activation record
 			// LDI BUFF1
-			insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+			insts.add(new Instruction(InstructionType.LDI, Program.BUFF1));
 			// STI BUFF2
-			insts.add(new Instruction(InstructionType.STI, Program.BUFF2_ADDR));
+			insts.add(new Instruction(InstructionType.STI, Program.BUFF2));
 		}
 		
 		// --- call the procedure (implicitly stores return address in SP) ---
@@ -738,13 +738,13 @@ class FunctionCall extends Expr {
 		// --- store callee return value in local temporary ---
 		
 		// LDA SP
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.SP));
 		// SUB 2
 		insts.add(new Instruction(InstructionType.SUB, two));
 		// STA BUFF1
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		// LDI BUFF1
-		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1));
 		// STA <res>
 		String res = SymbolValue.addTemp(proc, consts);
 		insts.add(new Instruction(InstructionType.STA, res));
@@ -753,23 +753,23 @@ class FunctionCall extends Expr {
 
 		// revert to old FP (from prev_FP at address current SP - 1)
 		// LDA SP
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.SP));
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
 		// STA BUFF1
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		// LDI BUFF1
-		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1));
 		// STA FP
-		insts.add(new Instruction(InstructionType.STA, Program.FP_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.FP));
 		
 		// revert to old SP (current SP - <size>)
 		// LDA SP
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.SP));
 		// SUB <size>
 		insts.add(new Instruction(InstructionType.SUB, sizeStr));
 		// STA SP
-		insts.add(new Instruction(InstructionType.STA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.SP));
 		
 		// make sure the returned value is the argument of the last instruction
 		// of this function call. done arbitrarily using LDA
@@ -842,24 +842,24 @@ class ReturnStatement extends Statement {
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
 				InstructionType.LDA, ret));
 		// STA BUFF1
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		// now calculate address for return value and store it in BUFF2
 		// LDA SP
-		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.SP));
 		// SUB 2
 		String two = SymbolValue.updateConst(consts, 2);
 		insts.add(new Instruction(InstructionType.SUB, two));
 		// STA BUFF2
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF2_ADDR));
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF2));
 		// finally load <ret> from BUFF1 and store (indirect) in BUFF2
 		// LDA <ret>
-		insts.add(new Instruction(InstructionType.LDA, Program.BUFF1_ADDR));
+		insts.add(new Instruction(InstructionType.LDA, Program.BUFF1));
 		// STI BUFF2
-		insts.add(new Instruction(InstructionType.STI, Program.BUFF2_ADDR));
+		insts.add(new Instruction(InstructionType.STI, Program.BUFF2));
 		
 		// jump indirectly to SP (that holds return address)
 		// JMI SP
-		insts.add(new Instruction(InstructionType.JMI, Program.SP_ADDR));
+		insts.add(new Instruction(InstructionType.JMI, Program.SP));
 		
 		return insts;
 	}
@@ -1315,17 +1315,25 @@ class Program {
 	private int initFP;
 	private StatementList stmtlist;
 	private TreeMap<String, LinkedList<Instruction>> trans;
-	private HashMap<String, SymbolValue> consts = new HashMap<>();
+	private HashMap<String, Integer> aux;
+	private HashMap<String, SymbolValue> consts;
 	private TreeMap<String, Proc> functionTable;
 	
 	// global SP and FP
-	public static String SP_ADDR = "1";
-	public static String FP_ADDR = "2";
-	public static String BUFF1_ADDR = "3";
-	public static String BUFF2_ADDR = "4";
+	public static String SP = "SP";
+	public static String FP = "FP";
+	public static String BUFF1 = "BUFF1";
+	public static String BUFF2 = "BUFF2";
 	
 	public Program(StatementList list) {
 		stmtlist = list;
+		aux = new HashMap<>();
+		aux.put(SP, 1);
+		aux.put(FP, 2);
+		aux.put(BUFF1, 3);
+		aux.put(BUFF2, 4);
+		consts = new HashMap<>();
+		functionTable = new TreeMap<>();
 	}
 	
 	// -------------------------------------------------------------------------
@@ -1441,10 +1449,13 @@ class Program {
 				insts = trans.get(procName);
 				firstLine = true;
 				for (Instruction inst : insts) {
-					toPrint = inst.toString(consts, functionTable.get(procName)
+					toPrint = inst.toString(aux, consts, functionTable.get(procName)
 							.symbolTable(), functionTable, linked);
 					if (firstLine) {
-						toPrint += " --- Proc: " + procName + " ---";
+						toPrint += " --- Proc: "
+								+ procName
+								+ (inst.line() != null ? " at line "
+										+ inst.line() : "") + " ---";
 						firstLine = false;
 					}
 					pw.println(toPrint);
@@ -1470,12 +1481,12 @@ class Program {
 		path = path.replace(".txt","_mem.txt");
 		SortedMap<Integer,String> mem = new TreeMap<>();
 		// SP
-		mem.put(1, initSP + "");
+		mem.put(aux.get(SP), initSP + "");
 		// FP
-		mem.put(2, initFP + "");
+		mem.put(aux.get(FP), initFP + "");
 		// buffers
-		mem.put(3, 0 + "");
-		mem.put(4, 0 + "");
+		mem.put(aux.get(BUFF1), "0");
+		mem.put(aux.get(BUFF2), "0");
 		// constants
 		for (SymbolValue constant: consts.values()) {
 			mem.put(constant.addr(), constant.value() + "");
@@ -1494,7 +1505,8 @@ class Program {
 				continue;
 			}
 			// put value in absolute address, calculated from FP + offset
-			mem.put(initFP + val.addr(), val.value() + "");
+			mem.put(initFP + val.addr(),
+					val.value() == null ? "0" : val.value() + "");
 		}
 		
 		// finally, write to mem file
@@ -1534,7 +1546,7 @@ class Program {
 		for (String procName : trans.keySet()) {
 			insts = trans.get(procName);
 			for (Instruction inst : insts)
-				res += inst.toString(consts, functionTable.get(procName)
+				res += inst.toString(aux, consts, functionTable.get(procName)
 						.symbolTable(), functionTable, linked)
 						+ "\n";
 		}
