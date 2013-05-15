@@ -131,6 +131,23 @@ class SymbolValue {
 				new SymbolValue(name, null, SymbolType.LABEL, null));
 		return name;
 	}
+	
+	/**
+	 * Checks if the given parameter name exists in the symbol table, and
+	 * returns null as error if found. Otherwise, adds the parameter with the
+	 * given offset as address. Returns the parameter name if added.
+	 */
+	public static String addParam(HashMap<String, SymbolValue> symbolTable,
+			String param, int offset) {
+		// if already defined, return null (as error)
+		if (symbolTable.containsKey(param))
+			return null;
+		
+		// offset goes to address
+		symbolTable.put(param, new SymbolValue(param, null, SymbolType.PARAM,
+				offset));
+		return param;
+	}
 
 	/**
 	 * Checks if the given variable name exists in the symbol table, and adds it
@@ -142,18 +159,6 @@ class SymbolValue {
 			symbolTable.put(var,
 					new SymbolValue(var, null, SymbolType.VAR, null));
 		return var;
-	}
-	
-	/**
-	 * Checks if the given parameter name exists in the symbol table, and adds
-	 * it if not. Returns the parameter name.
-	 */
-	public static String updateParam(HashMap<String, SymbolValue> symbolTable,
-			String param) {
-		if (!symbolTable.containsKey(param))
-			symbolTable.put(param,
-					new SymbolValue(param, null, SymbolType.PARAM, null));
-		return param;
 	}
 
 	/**
@@ -211,6 +216,8 @@ class Instruction {
 	private InstructionType type;
 	private String arg;
 	
+	// private constructors
+	
 	/**
 	 * Constructor from label only (for label only rows).
 	 */
@@ -244,6 +251,44 @@ class Instruction {
 		arg = inst.arg;
 		label = inst.label;
 		type = inst.type;
+	}
+	
+	// factory
+	
+	/**
+	 * @return the list of instructions corresponding to the given label,
+	 *         instruction type and argument. If absolute is true, returns just
+	 *         one instruction. Otherwise, constructs the set of instructions to
+	 *         get the argument as an offset from FP.
+	 */
+	public LinkedList<Instruction> getInstructionsFor(
+			HashMap<String, SymbolValue> consts,
+			HashMap<String, SymbolValue> symbolTable,
+			String label, InstructionType type, String arg) {
+		// determine whether arg is const/sp/fp/buff -- use absolute address,
+		// or var/param/temp -- use relative address
+		boolean absolute =
+				consts.containsKey(arg) ||
+				arg == Program.SP_ADDR ||
+				arg == Program.FP_ADDR ||
+				arg == Program.BUFF_ADDR;
+		LinkedList<Instruction> res = new LinkedList<>();
+		if (absolute) {
+			// apply the instruction straightforwardly
+			res.add(new Instruction(type, arg, label));
+		}
+		else {
+			// calculate absolute address from FP + offset			
+			// LDA FP
+			res.add(new Instruction(InstructionType.LDA, Program.FP_ADDR));
+			int offset = symbolTable.get(arg).addr();
+			String offsetStr = SymbolValue.updateConst(consts, offset);
+			// ADD <offset>
+			res.add(new Instruction(InstructionType.ADD, offsetStr));
+			// STA BUFF
+			res.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+		}
+		return res;
 	}
 
 	/**
@@ -313,14 +358,14 @@ class Instruction {
 	 * @param arg
 	 * @return
 	 */
-	public static LinkedList<Instruction> getLDAInsts(
+	/*public static LinkedList<Instruction> getLDAInsts(
 			HashMap<String, SymbolValue> consts,
 			HashMap<String, SymbolValue> symbolTable,
 			String arg) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		if (consts.containsKey(arg)) {
 			// LDA <arg>
-			res.addAll(Instruction.getLDAInsts(consts, symbolTable, arg));
+			res.add(new Instruction(InstructionType.LDA, arg));
 		}
 		else {
 			// LDA SP
@@ -330,6 +375,7 @@ class Instruction {
 		}
 		return res;
 	}
+	*/
 	
 	// setters
 	
@@ -387,18 +433,10 @@ abstract class Expr extends Component {
 		res.addAll(code1);
 		// code2 (T2)
 		res.addAll(code2);
-		// if not a subtraction, switch next commands for possible peephole
-		if (op != InstructionType.SUB) {
-			// LDA T2
-			res.addAll(Instruction.getLDAInsts(consts, symbolTable, t2));
-			// OP T1
-			res.add(new Instruction(op, t1));
-		} else {
-			// LDA T1
-			res.addAll(Instruction.getLDAInsts(consts, symbolTable, t1));
-			// OP T2
-			res.add(new Instruction(op, t2));
-		}
+		// LDA T1
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable, t1));
+		// OP T2
+		res.add(new Instruction(op, t2));
 		// ST t3
 		res.add(new Instruction(InstructionType.STA, SymbolValue
 				.addTemp(symbolTable)));
@@ -421,8 +459,8 @@ class Ident extends Expr {
 			SortedMap<String, Proc> functionTable) {
 		LinkedList<Instruction> res = new LinkedList<>();
 		// LDA IDENT
-		res.addAll(Instruction.getLDAInsts(consts, symbolTable, SymbolValue.updateVar(
-				symbolTable, name)));
+		res.addAll(Instruction.getLDAInsts(consts, symbolTable,
+				SymbolValue.updateVar(symbolTable, name)));
 		// STA t_n
 		res.add(new Instruction(InstructionType.STA, SymbolValue
 				.addTemp(symbolTable)));
@@ -535,10 +573,17 @@ class FunctionCall extends Expr {
 		// get the relevant procedure and record size
 		Proc proc = functionTable.get(funcid);
 		int size = proc.getActivationRecordSize();
+		// make sure number of parameters fits
+		if (proc.numParams() != explist.getExpressions().size()) {
+			System.err.println("Param count does not match");
+			System.exit(-1);
+		}
+		
 		// update constants table with the size of the callee's activation
-		// record and fetch constant "1" for calculations
+		// record and fetch constants "1" and "2" for calculations
 		String sizeStr = SymbolValue.updateConst(consts, size);
 		String one = SymbolValue.updateConst(consts, 1);
+		String two = SymbolValue.updateConst(consts, 2);
 		
 		// --- update FP & SP ---
 		
@@ -591,8 +636,12 @@ class FunctionCall extends Expr {
 			offsetStr = SymbolValue.updateConst(consts, offset);
 			offset++;
 			insts.add(new Instruction(InstructionType.ADD, offsetStr));
-			// STA <arg> (the value of the expression)
-			insts.add(new Instruction(InstructionType.STA, arg));
+			// STA BUFF
+			insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
+			// LDA arg (the value of the expression)
+			insts.add(new Instruction(InstructionType.LDA, arg));
+			// STI BUFF (store arg value in FP + offset)
+			insts.add(new Instruction(InstructionType.STI, Program.BUFF_ADDR));
 		}
 		
 		// --- call the procedure (implicitly stores return address in SP) ---
@@ -610,7 +659,6 @@ class FunctionCall extends Expr {
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP_ADDR));
 		// SUB 2
-		String two = SymbolValue.updateConst(consts, 2);
 		insts.add(new Instruction(InstructionType.SUB, two));
 		// STA BUFF
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF_ADDR));
@@ -991,7 +1039,8 @@ class Proc {
 	private StatementList stmtlist;
 	
 	// data for translated code
-	private LinkedList<Instruction> trans;
+	private int offsetCounter = 1;
+	private LinkedList<Instruction> insts;
 	private HashMap<String, SymbolValue> symbolTable;
 	private Integer addr = null;
 	private Integer numInstructions = null;
@@ -1010,66 +1059,41 @@ class Proc {
 		main.isMain = true;
 		return main;
 	}
-	
-	public Integer apply(SortedMap<String, Proc> functionTable,
-			ExpressionList expressionlist) throws RuntimeException {
-		//TODO
-//		HashMap<String, SymbolValue> newSymbolTable = new HashMap<String, SymbolValue>();
-//
-//		// bind parameters in new name table
-//		// we need to get the underlying List structure that the ParamList
-//		// uses...
-//		Iterator<String> p = parameterlist.getParamList().iterator();
-//		Iterator<Expr> e = expressionlist.getExpressions().iterator();
-//
-//		if (parameterlist.getParamList().size() != expressionlist
-//				.getExpressions().size()) {
-//			System.out.println("Param count does not match");
-//			System.exit(1);
-//		}
-//		while (p.hasNext() && e.hasNext()) {
-//
-//			// assign the evaluation of the expression to the parameter name.
-//			newSymbolTable.put(p.next(),
-//					e.next().eval(symbolTable, functiontable));
-//			// System.out.println("Loading Nametable for procedure with: "+p+" = "+nametable.get(p));
-//
-//		}
-//		// evaluate function body using new name table and
-//		// old function table
-//		// eval statement list and catch return
-//		// System.out.println("Beginning Proceedure Execution..");
-//		try {
-//			stmtlist.eval(newSymbolTable, functiontable, var);
-//		} catch (ReturnValue result) {
-//			// Note, the result shold contain the proceedure's return value as a
-//			// String
-//			// System.out.println("return value = "+result.getMessage());
-//			return result.getRetValue();
-//		}
-//		System.out.println("Error:  no return value");
-//		System.exit(1);
-//		// need this or the compiler will complain, but should never
-//		// reach this...
-		return null;
-	}
 
 	public LinkedList<Instruction> translate(
+			HashMap<String, SymbolValue> consts,
 			SortedMap<String, Proc> functionTable) {
 		// if already translated, return
-		if (trans != null)
-			return trans;
+		if (insts != null)
+			return insts;		
+		insts = new LinkedList<>();
 		
-		trans = new LinkedList<>();
-		// TODO code here
-		// - make sure to check if function calls are legal
+		// --- bind parameters to their offsets ---
+		
+		String assigned;
+		for (String param: parameterlist.getParamList()) {
+			// add offset to constants
+			SymbolValue.updateConst(consts, offsetCounter);
+			// add parameter
+			assigned = SymbolValue.addParam(symbolTable, param, offsetCounter);
+			// increase offset
+			offsetCounter++;
+			if (assigned == null) {
+				System.err.println("Parameter " + param + " already defined");
+				System.exit(-1);
+			}
+		}
+		
+		// --- add body instructions ---
+		for (Statement s: stmtlist.getStatements())
+			insts.addAll(s.translate(consts, symbolTable, functionTable));
 		
 		// add HLT to end of "main" procedure ONLY
 		if (isMain)
-			trans.add(new Instruction(InstructionType.HLT, null));
+			insts.add(new Instruction(InstructionType.HLT, null));
 		
-		// iterate and merge label-only instructions with following instructions
-		Iterator<Instruction> iter = trans.iterator();
+		// --- merge label-only instructions with following instructions ---
+		Iterator<Instruction> iter = insts.iterator();
 		if (iter.hasNext())
 		{
 			Instruction prev = iter.next(), curr;
@@ -1077,8 +1101,8 @@ class Proc {
 				curr = iter.next();
 				// if prev is a label-only instruction
 				// and curr has no label, merge
-				if (prev.label() != null && prev.type() == InstructionType.NONE &&
-						curr.label() == null) {
+				if (prev.label() != null && prev.type() == InstructionType.NONE
+						&& curr.label() == null) {
 					prev.setType(curr.type());
 					prev.setArg(curr.arg());
 					iter.remove(); // delete curr from set
@@ -1091,7 +1115,7 @@ class Proc {
 		}
 		
 		// update number of instructions
-		numInstructions = trans.size();
+		numInstructions = insts.size();
 		
 		// update required size of activation record
 		// initialized to 3 for:
@@ -1105,26 +1129,32 @@ class Proc {
 				val.type() != SymbolType.CONST) // should never happen anyway
 				activationRecordSize++;
 		
-		return trans;
+		return insts;
 	}
 	
 	/**
 	 * Sets the start address (line) of the procedure to the given one,
 	 * and the lines of every instruction in the procedure body.
-	 * @param procStartLine
 	 */
-	public void setLines(int procStartLine) {
+	public void setLinesStartingAt(int procStartLine) {
 		// if not translated, do nothing
-		if (trans == null)
+		if (insts == null)
 			return;
 		
 		addr = procStartLine;
-		Iterator<Instruction> iter = trans.iterator();
+		Iterator<Instruction> iter = insts.iterator();
 		int i = addr;
 		while (iter.hasNext()) {
 			iter.next().setLine(i);
 			i++;
 		}
+	}
+	
+	/**
+	 * @return number of expected parameters.
+	 */
+	public int numParams() {
+		return parameterlist.getParamList().size();
 	}
 	
 	public Integer getAddr() {
@@ -1206,8 +1236,10 @@ class Program {
 		// - main code
 		// - other procedures code
 		trans = new LinkedList<>();
-		for (String procName: functionTable.keySet())
-			trans.addAll(functionTable.get(procName).translate(functionTable));
+		for (String procName: functionTable.keySet()) {
+			trans.addAll(functionTable.get(procName).translate(consts,
+					functionTable));
+		}
 	}
 	
 	/**
@@ -1219,7 +1251,7 @@ class Program {
 		Proc currProc;
 		for (String procName: functionTable.keySet()) {
 			currProc = functionTable.get(procName);
-			currProc.setLines(line);
+			currProc.setLinesStartingAt(line);
 			line += currProc.numInstructions();
 		}
 		
