@@ -2,7 +2,7 @@
 # Group 1
 
 # RAM simulator path
-RAM=ram.exe
+RAM=~kschmidt/bin/ram
 # RAM memory argument
 ifndef RAM_MEM
 	M=
@@ -35,7 +35,7 @@ view-link : linked.txt linked_mem.txt
 ### compile ###
 
 compile : build
-	@java -classpath ".;java-cup-11a.jar" parser
+	@java -classpath ".:java-cup-11a.jar" parser
 
 build : Yylex.class parser.class sym.class Program.class
 
