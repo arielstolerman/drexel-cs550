@@ -838,6 +838,8 @@ class FunctionCall extends Expr {
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		// LDI BUFF1
 		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1));
+		// STA BUFF1
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		
 		// --- revert to old SP and FP ---
 
@@ -975,10 +977,14 @@ class ReturnStatement extends Statement {
 		// STI BUFF2
 		insts.add(new Instruction(InstructionType.STI, Program.BUFF2));
 		
-		// jump indirectly to SP (that holds return address)
-		// JMI SP
-		insts.add(new Instruction(InstructionType.JMI, Program.SP));
+		// return to caller
+		// LDI SP
+		insts.add(new Instruction(InstructionType.LDI, Program.SP));
 		insts.getLast().setComment("jump back to caller");
+		// STA BUFF1
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
+		// JMI BUFF1
+		insts.add(new Instruction(InstructionType.JMI, Program.BUFF1));
 		
 		return insts;
 	}
