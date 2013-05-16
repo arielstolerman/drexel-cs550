@@ -184,9 +184,9 @@ void RAM::execute()
 	OPCODES op;
 	bool halted = false;
 
-		// start at first instruction
+	// start at first instruction
 	pc = 1 ;
-
+	
 	while (!halted) {
 		op = program[pc].opcode;
 		switch (op) {
