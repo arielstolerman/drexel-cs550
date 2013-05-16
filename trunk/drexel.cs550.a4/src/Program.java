@@ -1,14 +1,8 @@
-/* this is the cup file for the mini language
- * at http://www.cs.drexel.edu/~jjohnson/2006-07/winter/cs360/lectures/lec6.html
- * created by Xu, 2/5/07
- * 
- * Modified by Mike Kopack for CS550, 2009 Spring Qtr.
- * Should be at the same level of completeness as the Lecture 2c
- * C++ version.
- * 
- * -----------------------------------------------------------------------------
- * 
- * Assignment 3
+/* 
+ * CS550 Spring 2013
+ * Drexel University
+ * -----------------
+ * Assignment 4
  * Group 1
  * 
  */
@@ -824,7 +818,7 @@ class FunctionCall extends Expr {
 		// --- call the procedure (implicitly stores return address in SP) ---
 		// CAL <funcid>
 		insts.add(new Instruction(InstructionType.CAL, funcid));
-		insts.getLast().setComment(" finally - call " + funcid);
+		insts.getLast().setComment("call " + funcid);
 		
 		// ---------------------------------------------------------------------
 		// callee procedure is running...
@@ -836,44 +830,49 @@ class FunctionCall extends Expr {
 		
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP));
+		insts.getLast().setComment("store " + funcid + "'s return value in " +
+				Program.BUFF1);
 		// SUB 2
 		insts.add(new Instruction(InstructionType.SUB, two));
 		// STA BUFF1
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		// LDI BUFF1
 		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1));
-		// STA <res>
-		String res = SymbolValue.addTemp(proc, consts);
-		insts.add(new Instruction(InstructionType.STA, res));
 		
 		// --- revert to old SP and FP ---
 
 		// revert to old FP (from prev_FP at address current SP - 1)
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP));
+		insts.getLast().setComment("revert FP");
 		// SUB 1
 		insts.add(new Instruction(InstructionType.SUB, one));
-		// STA BUFF1
-		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
-		// LDI BUFF1
-		insts.add(new Instruction(InstructionType.LDI, Program.BUFF1));
+		// STA BUFF2
+		insts.add(new Instruction(InstructionType.STA, Program.BUFF2));
+		// LDI BUFF2
+		insts.add(new Instruction(InstructionType.LDI, Program.BUFF2));
 		// STA FP
 		insts.add(new Instruction(InstructionType.STA, Program.FP));
+		
+		// now with reverted FP, save return value (in BUFF1) locally
+		// LDA BUFF1
+		insts.add(new Instruction(InstructionType.LDA, Program.BUFF1));
+		insts.getLast().setComment("now after reverted FP, store " + funcid +
+				"'s return value locally from " + Program.BUFF1);
+		// STA <res>
+		String res = SymbolValue.addTemp(proc, consts);
+		insts.addAll(Instruction.getInstructionsFor(consts, proc, null, InstructionType.STA, res));
 		
 		// revert to old SP (current SP - <size>)
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP));
+		insts.getLast().setComment("revert SP");
 		// SUB <size>
 		insts.add(new Instruction(InstructionType.SUB, sizeStr));
 		// STA SP
 		insts.add(new Instruction(InstructionType.STA, Program.SP));
 		
 		resVarName = res;
-//		// make sure the returned value is the argument of the last instruction
-//		// of this function call. done arbitrarily using LDA
-//		// LDA <res>
-//		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
-//				InstructionType.LDA, res));
 		
 		return insts;
 	}
@@ -945,6 +944,7 @@ class ReturnStatement extends Statement {
 		// calculate return value expression
 		LinkedList<Instruction> resInsts = expr.translate(consts, proc,
 				functionTable);
+		resInsts.getFirst().setComment("calculate return value");
 		String ret = expr.getResVarName();
 		// add all expr instructions
 		insts.addAll(resInsts);
@@ -954,25 +954,31 @@ class ReturnStatement extends Statement {
 		// LDA <ret>
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
 				InstructionType.LDA, ret));
+		insts.getLast().setComment("backup return value in " + Program.BUFF1);
 		// STA BUFF1
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF1));
 		// now calculate address for return value and store it in BUFF2
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP));
+		insts.getLast().setComment("calculate return value address and store " +
+				"in " + Program.BUFF2);
 		// SUB 2
 		String two = SymbolValue.updateConst(consts, 2);
 		insts.add(new Instruction(InstructionType.SUB, two));
 		// STA BUFF2
 		insts.add(new Instruction(InstructionType.STA, Program.BUFF2));
 		// finally load <ret> from BUFF1 and store (indirect) in BUFF2
-		// LDA <ret>
+		// LDA BUFF1 (return value)
 		insts.add(new Instruction(InstructionType.LDA, Program.BUFF1));
+		insts.getLast().setComment("finally store return value (" +
+				Program.BUFF1 + ") in designated address");
 		// STI BUFF2
 		insts.add(new Instruction(InstructionType.STI, Program.BUFF2));
 		
 		// jump indirectly to SP (that holds return address)
 		// JMI SP
 		insts.add(new Instruction(InstructionType.JMI, Program.SP));
+		insts.getLast().setComment("jump back to caller");
 		
 		return insts;
 	}
