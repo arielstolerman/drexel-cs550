@@ -1,25 +1,45 @@
-1	1; constant ONE
-2	2; constant TWO
-3	0; constant ZERO
-4	5; constant FIVE
-5	3; constant THREE
-6	0; variable j
-7	0; variable i
-8	0; variable x
-9	0; temporary T6
-10	0; temporary T7
-11	0; temporary T4
-12	0; temporary T5
-13	0; temporary T8
-14	0; temporary T9
-15	0; temporary T1
-16	0; temporary T0
-17	0; temporary T3
-18	0; temporary T2
-19	0; temporary T10
-20	0; temporary T11
-21	0; temporary T12
-22	0; temporary T13
-23	0; temporary T14
-24	0; temporary T15
-25	0; temporary T16
+1  	 48; SP
+2  	 25; FP
+3  	  0; BUFF1
+4  	  0; BUFF2
+5  	 17; constant
+6  	 19; constant
+7  	 16; constant
+8  	  4; constant
+9  	 11; constant
+10 	  5; constant
+11 	 20; constant
+12 	 10; constant
+13 	 13; constant
+14 	  7; constant
+15 	  9; constant
+16 	 14; constant
+17 	  1; constant
+18 	 15; constant
+19 	  2; constant
+20 	  3; constant
+21 	 18; constant
+22 	 12; constant
+23 	  6; constant
+24 	  0; constant
+25 	  8; constant
+26 	  0; temporary T1
+27 	  0; variable i
+28 	  0; temporary T3
+29 	  0; variable j
+30 	  0; temporary T5
+31 	  0; variable x
+32 	  0; temporary T7
+33 	  0; temporary T8
+34 	  0; temporary T9
+35 	  0; temporary T10
+36 	  0; temporary T11
+37 	  0; temporary T12
+38 	  0; temporary T13
+39 	  0; temporary T14
+40 	  0; temporary T15
+41 	  0; temporary T16
+42 	  0; temporary T17
+43 	  0; temporary T18
+44 	  0; temporary T19
+45 	  0; temporary T20

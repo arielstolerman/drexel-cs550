@@ -1,0 +1,107 @@
+LDA 10 ;             preparing param 1 for addone call --- Proc: __main__ at line 1 ---
+STA 4 ;
+LDA 2 ;
+ADD 6 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 1 ;              store current FP in addone's prev_FP address
+ADD 5 ;
+SUB 6 ;
+STA 3 ;
+LDA 2 ;
+STI 3 ;
+LDA 1 ;              update FP to current SP
+STA 2 ;
+LDA 1 ;              update SP to current SP + addone's record size
+ADD 5 ;
+STA 1 ;
+LDA 1 ;              set param 1 in addone's record
+SUB 6 ;
+STA 3 ;
+LDI 3 ;
+ADD 6 ;
+STA 3 ;
+LDA 2 ;
+ADD 6 ;
+STA 4 ;
+LDI 3 ;
+STI 4 ;
+CAL 62 ;             call addone
+LDA 1 ;              store addone's return value in BUFF1
+SUB 7 ;
+STA 3 ;
+LDI 3 ;
+STA 3 ;
+LDA 1 ;              revert FP
+SUB 6 ;
+STA 4 ;
+LDI 4 ;
+STA 2 ;
+LDA 3 ;              now after reverted FP, store addone's return value locally from BUFF1
+STA 4 ;
+LDA 2 ;
+ADD 7 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 1 ;              revert SP
+SUB 5 ;
+STA 1 ;
+LDA 2 ;
+ADD 7 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 8 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+HLT ;
+LDA 2 ;              calculate return value --- Proc: addone at line 62 ---
+ADD 6 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 8 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 6 ;
+STA 4 ;
+LDA 2 ;
+ADD 9 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;
+ADD 8 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 9 ;
+STA 3 ;
+LDI 3 ;
+ADD 4 ;
+STA 4 ;
+LDA 2 ;
+ADD 10 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;
+ADD 10 ;
+STA 3 ;
+LDI 3 ;              backup return value in BUFF1
+STA 3 ;
+LDA 1 ;              calculate return value address and store in BUFF2
+SUB 7 ;
+STA 4 ;
+LDA 3 ;              finally store return value (BUFF1) in designated address
+STI 4 ;
+LDI 1 ;              jump back to caller
+STA 3 ;
+JMI 3 ;
