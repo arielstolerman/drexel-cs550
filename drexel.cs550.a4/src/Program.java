@@ -221,6 +221,7 @@ class Instruction {
 	private String label; // null == no label
 	private InstructionType type;
 	private String arg;
+	private String comment;
 	
 	// private constructors
 	
@@ -295,10 +296,13 @@ class Instruction {
 			res.add(new Instruction(type, arg, label));
 		}
 		else {
-			// backup the current value of AC to BUFF2 (not required for
-			// LDA and LDI but done in any case)
+			// backup the current value of AC to BUFF2 if required to be used later
 			// STA BUFF2
-			res.add(new Instruction(InstructionType.STA, Program.BUFF2));
+			if (type != InstructionType.LDA &&
+				type != InstructionType.LDI &&
+				type != InstructionType.JMI) {
+				res.add(new Instruction(InstructionType.STA, Program.BUFF2));
+			}
 			// calculate absolute address from FP + offset
 			// LDA FP
 			res.add(new Instruction(InstructionType.LDA, Program.FP));
@@ -415,6 +419,11 @@ class Instruction {
 		// semicolon
 		if (type != InstructionType.NONE)
 			res += " ;";
+		// comment
+		if (comment != null) {
+			res = String.format("%-20s", res);
+			res += " " + comment;
+		}
 		return res;
 	}
 
@@ -436,6 +445,10 @@ class Instruction {
 		return arg;
 	}
 	
+	public String comment() {
+		return comment;
+	}
+	
 	// setters
 	
 	public void setLine(int line) {
@@ -452,6 +465,10 @@ class Instruction {
 	
 	public void setArg(String arg) {
 		this.arg = arg;
+	}
+	
+	public void setComment(String comment) {
+		this.comment = comment;
 	}
 }
 
@@ -710,8 +727,11 @@ class FunctionCall extends Expr {
 		// --- calculate all parameter expressions (stored in temps) ---
 		LinkedList<Instruction> exprInsts;
 		LinkedList<String> paramTemps = new LinkedList<>();
+		int paramCount = 1;
 		for (Expr e: explist.getExpressions()) {
 			exprInsts = e.translate(consts, proc, functionTable);
+			exprInsts.getFirst().setComment("preparing param " +
+					paramCount + " for " + funcid	+ " call");
 			insts.addAll(exprInsts);
 			paramTemps.add(e.getResVarName());
 		}
@@ -728,6 +748,8 @@ class FunctionCall extends Expr {
 		// and store FP to it
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP));
+		insts.getLast().setComment("store current FP in " + funcid + "'s prev_FP"
+				+ " address");
 		// ADD <size>
 		insts.add(new Instruction(InstructionType.ADD, sizeStr));
 		// SUB 1
@@ -743,12 +765,15 @@ class FunctionCall extends Expr {
 		// update FP (which is current SP)
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP));
+		insts.getLast().setComment("update FP to current SP");
 		// STA FP
 		insts.add(new Instruction(InstructionType.STA, Program.FP));
 		
 		// update SP (which is current SP + <size>)
 		// LDA SP
 		insts.add(new Instruction(InstructionType.LDA, Program.SP));
+		insts.getLast().setComment("update SP to current SP + " + funcid +
+				"'s record size");
 		// ADD <size>
 		insts.add(new Instruction(InstructionType.ADD, sizeStr));
 		// STA SP
@@ -764,6 +789,8 @@ class FunctionCall extends Expr {
 			// calculated from prev_FP (= curr SP - 1) + temp's offset
 			// LDA SP
 			insts.add(new Instruction(InstructionType.LDA, Program.SP));
+			insts.getLast().setComment("set param " + offset + " in " +
+					funcid + "'s record");
 			// SUB 1
 			insts.add(new Instruction(InstructionType.SUB, one));
 			// STA BUFF1 (BUFF1 now contains address of prev_FP)
@@ -797,6 +824,7 @@ class FunctionCall extends Expr {
 		// --- call the procedure (implicitly stores return address in SP) ---
 		// CAL <funcid>
 		insts.add(new Instruction(InstructionType.CAL, funcid));
+		insts.getLast().setComment(" finally - call " + funcid);
 		
 		// ---------------------------------------------------------------------
 		// callee procedure is running...
