@@ -1,0 +1,13 @@
+1  	 16; SP
+2  	 10; FP
+3  	  0; BUFF1
+4  	  0; BUFF2
+5  	  7; constant
+6  	  1; constant
+7  	  2; constant
+8  	  3; constant
+9  	  4; constant
+10 	  5; constant
+11 	  0; temporary T1
+12 	  0; temporary T2
+13 	  0; variable x
