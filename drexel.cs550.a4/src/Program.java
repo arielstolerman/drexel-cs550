@@ -15,6 +15,7 @@
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.Entry;
 
 // =============================================================================
 // added classes and enums
@@ -459,10 +460,28 @@ class Instruction {
  */
 abstract class Component {
 
+	/**
+	 * Translate method.
+	 */
 	public abstract LinkedList<Instruction> translate(
 			HashMap<String, SymbolValue> consts,
 			Proc proc,
 			SortedMap<String, Proc> functionTable);
+	
+	/**
+	 * A method for recursively initializing the symbol table entries used by
+	 * a procedure, in order to be able to precalculate its required activation
+	 * record size.
+	 */
+	public abstract void updateSymbolTableEntries(Set<String> entries);
+	
+	private static int TMP_COUNT = 0;
+	
+	public static String getTempAndIncrement() {
+		String t = "T" + TMP_COUNT;
+		TMP_COUNT++;
+		return t;
+	}
 }
 
 // =============================================================================
@@ -473,7 +492,7 @@ abstract class Expr extends Component {
 	 * Returns the translation of applying the given binary operator on the
 	 * given expressions.
 	 */
-	public static LinkedList<Instruction> getBinaryOpInsts(Expr expr1,
+	public LinkedList<Instruction> getBinaryOpInsts(Expr expr1,
 			Expr expr2, InstructionType op,
 			HashMap<String, SymbolValue> consts,
 			Proc proc,
@@ -484,8 +503,8 @@ abstract class Expr extends Component {
 				functionTable);
 		LinkedList<Instruction> code2 = expr2.translate(consts, proc,
 				functionTable);
-		String t1 = code1.getLast().arg();
-		String t2 = code2.getLast().arg();
+		String t1 = expr1.getResVarName();
+		String t2 = expr2.getResVarName();
 		// create final expression
 		// code1 (T1)
 		res.addAll(code1);
@@ -497,9 +516,28 @@ abstract class Expr extends Component {
 		// OP T2
 		res.addAll(Instruction.getInstructionsFor(consts, proc, null, op, t2));
 		// ST t3
+		String t3 = SymbolValue.addTemp(proc,consts);
 		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
-				InstructionType.STA, SymbolValue.addTemp(proc,consts)));
+				InstructionType.STA, t3));
+		resVarName = t3;
 		return res;
+	}
+	
+	public static void updateSymbolTableEntriesBinaryOp(Set<String> entries,
+			Expr expr1, Expr expr2) {
+		expr1.updateSymbolTableEntries(entries); // for expr1
+		expr2.updateSymbolTableEntries(entries); // for expr2
+		entries.add(getTempAndIncrement()); // t3
+	}
+	
+	public String resVarName = null;
+	
+	/**
+	 * @return the name of the variable or temporary that holds the result for
+	 * the translated expression.
+	 */
+	public String getResVarName() {
+		return resVarName;
 	}
 }
 
@@ -521,9 +559,17 @@ class Ident extends Expr {
 		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
 				InstructionType.LDA, SymbolValue.updateVar(proc, consts, name)));
 		// STA t_n
+		String t = SymbolValue.addTemp(proc, consts);
 		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
-				InstructionType.STA, SymbolValue.addTemp(proc, consts)));
+				InstructionType.STA, t));
+		resVarName = t;
 		return res;
+	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		entries.add(name); // var / param
+		entries.add(getTempAndIncrement()); // t_n used to store var / param 
 	}
 }
 
@@ -549,9 +595,17 @@ class Number extends Expr {
 		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
 				InstructionType.LDA, SymbolValue.updateConst(consts, value)));
 		// STA t_n
+		String t = SymbolValue.addTemp(proc, consts);
 		res.addAll(Instruction.getInstructionsFor(consts, proc, null,
-				InstructionType.STA, SymbolValue.addTemp(proc, consts)));
+				InstructionType.STA, t));
+		resVarName = t;
 		return res;
+	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		// do nothing for the constant, it goes to global constants table
+		entries.add(getTempAndIncrement()); // but add t_n in which it's stored
 	}
 }
 
@@ -572,6 +626,11 @@ class Times extends Expr {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.MUL, consts,
 				proc, functionTable);
 	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		updateSymbolTableEntriesBinaryOp(entries, expr1, expr2);
+	}
 }
 
 class Plus extends Expr {
@@ -591,6 +650,11 @@ class Plus extends Expr {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.ADD, consts,
 				proc, functionTable);
 	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		updateSymbolTableEntriesBinaryOp(entries, expr1, expr2);
+	}
 }
 
 class Minus extends Expr {
@@ -609,6 +673,11 @@ class Minus extends Expr {
 			SortedMap<String, Proc> functionTable) {
 		return getBinaryOpInsts(expr1, expr2, InstructionType.SUB, consts,
 				proc, functionTable);
+	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		updateSymbolTableEntriesBinaryOp(entries, expr1, expr2);
 	}
 }
 
@@ -644,7 +713,7 @@ class FunctionCall extends Expr {
 		for (Expr e: explist.getExpressions()) {
 			exprInsts = e.translate(consts, proc, functionTable);
 			insts.addAll(exprInsts);
-			paramTemps.add(exprInsts.getLast().arg());
+			paramTemps.add(e.getResVarName());
 		}
 		
 		// --- update FP & SP ---
@@ -726,8 +795,8 @@ class FunctionCall extends Expr {
 		}
 		
 		// --- call the procedure (implicitly stores return address in SP) ---
-		// CAL
-		insts.add(new Instruction(InstructionType.CAL, null));
+		// CAL <funcid>
+		insts.add(new Instruction(InstructionType.CAL, funcid));
 		
 		// ---------------------------------------------------------------------
 		// callee procedure is running...
@@ -771,13 +840,23 @@ class FunctionCall extends Expr {
 		// STA SP
 		insts.add(new Instruction(InstructionType.STA, Program.SP));
 		
-		// make sure the returned value is the argument of the last instruction
-		// of this function call. done arbitrarily using LDA
-		// LDA <res>
-		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
-				InstructionType.LDA, res));
+		resVarName = res;
+//		// make sure the returned value is the argument of the last instruction
+//		// of this function call. done arbitrarily using LDA
+//		// LDA <res>
+//		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
+//				InstructionType.LDA, res));
 		
 		return insts;
+	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		// for the parameter expressions
+		for (Expr expr: explist.getExpressions())
+			expr.updateSymbolTableEntries(entries);
+		// the tmp used to store the result
+		entries.add(getTempAndIncrement());
 	}
 }
 
@@ -812,6 +891,12 @@ class DefineStatement extends Statement {
 			SortedMap<String, Proc> functionTable) {
 		return null;
 	}
+
+	@Override
+	/**
+	 * Should never be called!
+	 */
+	public void updateSymbolTableEntries(Set<String> entries) {}
 }
 
 class ReturnStatement extends Statement {
@@ -832,7 +917,7 @@ class ReturnStatement extends Statement {
 		// calculate return value expression
 		LinkedList<Instruction> resInsts = expr.translate(consts, proc,
 				functionTable);
-		String ret = resInsts.getLast().arg();
+		String ret = expr.getResVarName();
 		// add all expr instructions
 		insts.addAll(resInsts);
 		
@@ -863,6 +948,11 @@ class ReturnStatement extends Statement {
 		
 		return insts;
 	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		expr.updateSymbolTableEntries(entries);
+	}
 }
 
 class AssignStatement extends Statement {
@@ -883,7 +973,7 @@ class AssignStatement extends Statement {
 		LinkedList<Instruction> insts = new LinkedList<>();
 		LinkedList<Instruction> exprCode = expr.translate(consts, proc,
 				functionTable);
-		String t = exprCode.getLast().arg();
+		String t = expr.getResVarName();
 		// expr code
 		insts.addAll(exprCode);
 		// LDA t
@@ -893,6 +983,12 @@ class AssignStatement extends Statement {
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
 				InstructionType.STA, SymbolValue.updateVar(proc, consts, name)));
 		return insts;
+	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		entries.add(name); // var
+		expr.updateSymbolTableEntries(entries); // expression assigned to it
 	}
 }
 
@@ -921,7 +1017,7 @@ class IfStatement extends Statement {
 		// code_e
 		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
-		String t = cond.getLast().arg();
+		String t = expr.getResVarName();
 		insts.addAll(cond);
 		// LDA t
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
@@ -951,6 +1047,13 @@ class IfStatement extends Statement {
 				InstructionType.NONE, null));
 		return insts;
 	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		expr.updateSymbolTableEntries(entries);
+		stmtlist1.updateSymbolTableEntries(entries);
+		stmtlist2.updateSymbolTableEntries(entries);
+	}
 }
 
 class WhileStatement extends Statement {
@@ -974,7 +1077,7 @@ class WhileStatement extends Statement {
 		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
 		cond.getFirst().setLabel(l1);
-		String t = cond.getLast().arg();
+		String t = expr.getResVarName();
 		insts.addAll(cond);
 		// LDA t
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
@@ -997,6 +1100,12 @@ class WhileStatement extends Statement {
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, l2,
 				InstructionType.NONE, null));
 		return insts;
+	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		expr.updateSymbolTableEntries(entries);
+		stmtlist.updateSymbolTableEntries(entries);
 	}
 }
 
@@ -1025,7 +1134,7 @@ class RepeatStatement extends Statement {
 		// code_e
 		LinkedList<Instruction> cond = expr.translate(consts, proc,
 				functionTable);
-		String t = cond.getLast().arg();
+		String t = expr.getResVarName();
 		insts.addAll(cond);
 		// LDA t
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, null,
@@ -1044,6 +1153,12 @@ class RepeatStatement extends Statement {
 		insts.addAll(Instruction.getInstructionsFor(consts, proc, l2,
 				InstructionType.NONE, null));
 		return insts;
+	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		expr.updateSymbolTableEntries(entries);
+		stmtlist.updateSymbolTableEntries(entries);
 	}
 }
 
@@ -1132,6 +1247,12 @@ class StatementList extends Component {
 			res.addAll(stmt.translate(consts, proc, functionTable));
 		return res;
 	}
+
+	@Override
+	public void updateSymbolTableEntries(Set<String> entries) {
+		for (Statement s: statementlist)
+			s.updateSymbolTableEntries(entries);
+	}
 }
 
 class Proc {
@@ -1157,6 +1278,7 @@ class Proc {
 		symbolTable = new HashMap<>();
 		parameterlist = pl;
 		stmtlist = sl;
+		initActivationRecordSize();
 	}
 	
 	// factory method for creating a Proc for "main"
@@ -1221,19 +1343,22 @@ class Proc {
 		// update number of instructions
 		numInstructions = insts.size();
 		
+		return insts;
+	}
+	
+	public void initActivationRecordSize() {
 		// update required size of activation record
 		// initialized to 3 for:
 		// - return value
 		// - prev FP
 		// - return address
 		activationRecordSize = 3;
-		// add 1 for each entry in the symbol table except labels
-		for (SymbolValue val: symbolTable.values())
-			if (val.type() != SymbolType.LABEL &&
-				val.type() != SymbolType.CONST) // should never happen anyway
-				activationRecordSize++;
-		
-		return insts;
+		// add 1 for each of: params, vars, temps
+		Set<String> entries = new HashSet<>();
+		for (String param: parameterlist.getParamList())
+			entries.add(param);
+		stmtlist.updateSymbolTableEntries(entries);
+		activationRecordSize += entries.size();
 	}
 	
 	/**
@@ -1479,44 +1604,74 @@ class Program {
 	 */
 	private void dumpInitMemImage(String path) {
 		path = path.replace(".txt","_mem.txt");
-		SortedMap<Integer,String> mem = new TreeMap<>();
+		String toPrint = "";
+		
+		// --- aux ---
 		// SP
-		mem.put(aux.get(SP), initSP + "");
+		toPrint += String.format("%-3d\t%3d; %s\n",
+				aux.get(SP),
+				initSP,
+				SP);
 		// FP
-		mem.put(aux.get(FP), initFP + "");
+		toPrint += String.format("%-3d\t%3d; %s\n",
+				aux.get(FP),
+				initFP,
+				FP);
 		// buffers
-		mem.put(aux.get(BUFF1), "0");
-		mem.put(aux.get(BUFF2), "0");
-		// constants
+		toPrint += String.format("%-3d\t%3d; %s\n",
+				aux.get(BUFF1),
+				0,
+				BUFF1);
+		toPrint += String.format("%-3d\t%3d; %s\n",
+				aux.get(BUFF2),
+				0,
+				BUFF2);
+		
+		// --- constants ---
+		TreeMap<Integer, SymbolValue> mem = new TreeMap<>();
 		for (SymbolValue constant: consts.values()) {
-			mem.put(constant.addr(), constant.value() + "");
+			mem.put(constant.addr(), constant);
 		}
-		// main's symbol table
+		SymbolValue val;
+		for (int addr: mem.keySet()) {
+			val = mem.get(addr);
+			toPrint += String.format("%-3d\t%3d; %s\n",
+					addr,
+					val.value(),
+					"constant");
+		}
+		
+		// --- main's symbol table ---
+		TreeMap<Integer, Entry<String, SymbolValue>> mainMem = new TreeMap<>();
 		HashMap<String, SymbolValue> mainSymbolTable = functionTable.get(
 				Proc.MAIN_NAME).symbolTable();
-		SymbolValue val;
-		for (String key: mainSymbolTable.keySet()) {
-			val = mainSymbolTable.get(key);
+		for (Entry<String, SymbolValue> entry: mainSymbolTable.entrySet()) {
+			val = entry.getValue();
 			if (val.type() == SymbolType.LABEL)
 				continue;
 			if (val.addr() == null) {
-				System.out.println("Warning! address for " + key + " is null " +
+				System.out.println("Warning! address for " + entry + " is null " +
 						"while dumping linked RAL memory to file " + path);
 				continue;
 			}
 			// put value in absolute address, calculated from FP + offset
-			mem.put(initFP + val.addr(),
-					val.value() == null ? "0" : val.value() + "");
+			mainMem.put(initFP + val.addr(), entry);
 		}
+		Entry<String, SymbolValue> entry;
+		for (int addr: mainMem.keySet()) {
+			entry = mainMem.get(addr);
+			val = entry.getValue();
+			toPrint += String.format("%-3d\t%3d; %s\n",
+					addr,
+					(val.value() == null ? 0 : val.value()),
+					val.type() + " " + entry.getKey());
+		}
+		
 		
 		// finally, write to mem file
 		try {
 			PrintWriter pw = new PrintWriter(new File(path));
-			String content;
-			for (int key: mem.keySet()) {
-				content = mem.get(key);
-				pw.println(key + "\t" + (content == null ? 0 : content) + "; ");
-			}
+			pw.print(toPrint);
 			pw.flush();
 			pw.close();
 		} catch (IOException e) {
