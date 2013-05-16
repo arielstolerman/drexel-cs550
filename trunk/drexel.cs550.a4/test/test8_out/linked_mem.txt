@@ -1,0 +1,20 @@
+1  	 23; SP
+2  	 15; FP
+3  	  0; BUFF1
+4  	  0; BUFF2
+5  	  9; constant
+6  	  7; constant
+7  	  1; constant
+8  	  2; constant
+9  	  3; constant
+10 	  4; constant
+11 	  6; constant
+12 	 12; constant
+13 	  5; constant
+14 	 10; constant
+15 	  8; constant
+16 	  0; temporary T1
+17 	  0; variable x
+18 	  0; temporary T3
+19 	  0; temporary T4
+20 	  0; variable y

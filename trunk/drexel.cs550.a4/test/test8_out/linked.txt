@@ -1,0 +1,236 @@
+LDA 13 ; --- Proc: __main__ at line 1 ---
+STA 4 ;
+LDA 2 ;
+ADD 7 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;
+ADD 7 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 8 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;              preparing param 1 for recfact call
+ADD 8 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 9 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 1 ;              store current FP in recfact's prev_FP address
+ADD 12 ;
+SUB 7 ;
+STA 3 ;
+LDA 2 ;
+STI 3 ;
+LDA 1 ;              update FP to current SP
+STA 2 ;
+LDA 1 ;              update SP to current SP + recfact's record size
+ADD 12 ;
+STA 1 ;
+LDA 1 ;              set param 1 in recfact's record
+SUB 7 ;
+STA 3 ;
+LDI 3 ;
+ADD 9 ;
+STA 3 ;
+LDA 2 ;
+ADD 7 ;
+STA 4 ;
+LDI 3 ;
+STI 4 ;
+CAL 82 ;             call recfact
+LDA 1 ;              store recfact's return value in BUFF1
+SUB 8 ;
+STA 3 ;
+LDI 3 ;
+STA 3 ;
+LDA 1 ;              revert FP
+SUB 7 ;
+STA 4 ;
+LDI 4 ;
+STA 2 ;
+LDA 3 ;              now after reverted FP, store recfact's return value locally from BUFF1
+STA 4 ;
+LDA 2 ;
+ADD 10 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 1 ;              revert SP
+SUB 12 ;
+STA 1 ;
+LDA 2 ;
+ADD 10 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 13 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+HLT ;
+LDA 2 ; --- Proc: recfact at line 82 ---
+ADD 7 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 9 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;
+ADD 9 ;
+STA 3 ;
+LDI 3 ;
+JMN 216 ;
+JMZ 216 ;
+LDA 2 ;              calculate return value
+ADD 7 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 10 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;              preparing param 1 for recfact call
+ADD 7 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 13 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 7 ;
+STA 4 ;
+LDA 2 ;
+ADD 11 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;
+ADD 13 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 11 ;
+STA 3 ;
+LDI 3 ;
+STA 3 ;
+LDA 4 ;
+SUB 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 6 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 1 ;              store current FP in recfact's prev_FP address
+ADD 12 ;
+SUB 7 ;
+STA 3 ;
+LDA 2 ;
+STI 3 ;
+LDA 1 ;              update FP to current SP
+STA 2 ;
+LDA 1 ;              update SP to current SP + recfact's record size
+ADD 12 ;
+STA 1 ;
+LDA 1 ;              set param 1 in recfact's record
+SUB 7 ;
+STA 3 ;
+LDI 3 ;
+ADD 6 ;
+STA 3 ;
+LDA 2 ;
+ADD 7 ;
+STA 4 ;
+LDI 3 ;
+STI 4 ;
+CAL 82 ;             call recfact
+LDA 1 ;              store recfact's return value in BUFF1
+SUB 8 ;
+STA 3 ;
+LDI 3 ;
+STA 3 ;
+LDA 1 ;              revert FP
+SUB 7 ;
+STA 4 ;
+LDI 4 ;
+STA 2 ;
+LDA 3 ;              now after reverted FP, store recfact's return value locally from BUFF1
+STA 4 ;
+LDA 2 ;
+ADD 15 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 1 ;              revert SP
+SUB 12 ;
+STA 1 ;
+LDA 2 ;
+ADD 10 ;
+STA 3 ;
+LDI 3 ;
+STA 4 ;
+LDA 2 ;
+ADD 15 ;
+STA 3 ;
+LDI 3 ;
+MUL 4 ;
+STA 4 ;
+LDA 2 ;
+ADD 5 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;
+ADD 5 ;
+STA 3 ;
+LDI 3 ;              backup return value in BUFF1
+STA 3 ;
+LDA 1 ;              calculate return value address and store in BUFF2
+SUB 8 ;
+STA 4 ;
+LDA 3 ;              finally store return value (BUFF1) in designated address
+STI 4 ;
+LDI 1 ;              jump back to caller
+STA 3 ;
+JMI 3 ;
+JMP 236 ;
+LDA 7 ;              calculate return value
+STA 4 ;
+LDA 2 ;
+ADD 14 ;
+STA 3 ;
+LDA 4 ;
+STI 3 ;
+LDA 2 ;
+ADD 14 ;
+STA 3 ;
+LDI 3 ;              backup return value in BUFF1
+STA 3 ;
+LDA 1 ;              calculate return value address and store in BUFF2
+SUB 8 ;
+STA 4 ;
+LDA 3 ;              finally store return value (BUFF1) in designated address
+STI 4 ;
+LDI 1 ;              jump back to caller
+STA 3 ;
+JMI 3 ;
+
