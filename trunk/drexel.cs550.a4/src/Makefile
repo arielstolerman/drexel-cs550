@@ -1,7 +1,14 @@
 # Assignment 4
 # Group 1
 
+# RAM simulator path
 RAM=ram.exe
+# RAM memory argument
+ifndef RAM_MEM
+	M=
+else
+	M=-m $$RAM_MEM
+endif
 
 .PHONY : view compile view-trans view-link run clean
 
@@ -45,7 +52,7 @@ parser.java sym.java : interpreterext.cup
 ### run ###
 
 run : linked.txt linked_mem.txt
-	@$(RAM) linked.txt linked_mem.txt
+	@$(RAM) $(M) linked.txt linked_mem.txt
 
 
 ### clean ###
