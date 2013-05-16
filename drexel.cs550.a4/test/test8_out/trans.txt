@@ -1,0 +1,236 @@
+     LDA FIVE ; --- Proc: __main__ at line 1 ---
+     STA BUFF2 ;
+     LDA FP ;
+     ADD ONE ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA FP ;
+     ADD ONE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD TWO ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA FP ;        preparing param 1 for recfact call
+     ADD TWO ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD THREE ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA SP ;        store current FP in recfact's prev_FP address
+     ADD ONE_TWO ;
+     SUB ONE ;
+     STA BUFF1 ;
+     LDA FP ;
+     STI BUFF1 ;
+     LDA SP ;        update FP to current SP
+     STA FP ;
+     LDA SP ;        update SP to current SP + recfact's record size
+     ADD ONE_TWO ;
+     STA SP ;
+     LDA SP ;        set param 1 in recfact's record
+     SUB ONE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     ADD THREE ;
+     STA BUFF1 ;
+     LDA FP ;
+     ADD ONE ;
+     STA BUFF2 ;
+     LDI BUFF1 ;
+     STI BUFF2 ;
+     CAL recfact ;   call recfact
+     LDA SP ;        store recfact's return value in BUFF1
+     SUB TWO ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF1 ;
+     LDA SP ;        revert FP
+     SUB ONE ;
+     STA BUFF2 ;
+     LDI BUFF2 ;
+     STA FP ;
+     LDA BUFF1 ;     now after reverted FP, store recfact's return value locally from BUFF1
+     STA BUFF2 ;
+     LDA FP ;
+     ADD FOUR ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA SP ;        revert SP
+     SUB ONE_TWO ;
+     STA SP ;
+     LDA FP ;
+     ADD FOUR ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD FIVE ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     HLT ;
+     LDA FP ; --- Proc: recfact at line 82 ---
+     ADD ONE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD THREE ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA FP ;
+     ADD THREE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     JMN L1 ;
+     JMZ L1 ;
+     LDA FP ;        calculate return value
+     ADD ONE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD FOUR ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA FP ;        preparing param 1 for recfact call
+     ADD ONE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD FIVE ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA ONE ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD SIX ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA FP ;
+     ADD FIVE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD SIX ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     SUB BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD SEVEN ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA SP ;        store current FP in recfact's prev_FP address
+     ADD ONE_TWO ;
+     SUB ONE ;
+     STA BUFF1 ;
+     LDA FP ;
+     STI BUFF1 ;
+     LDA SP ;        update FP to current SP
+     STA FP ;
+     LDA SP ;        update SP to current SP + recfact's record size
+     ADD ONE_TWO ;
+     STA SP ;
+     LDA SP ;        set param 1 in recfact's record
+     SUB ONE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     ADD SEVEN ;
+     STA BUFF1 ;
+     LDA FP ;
+     ADD ONE ;
+     STA BUFF2 ;
+     LDI BUFF1 ;
+     STI BUFF2 ;
+     CAL recfact ;   call recfact
+     LDA SP ;        store recfact's return value in BUFF1
+     SUB TWO ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF1 ;
+     LDA SP ;        revert FP
+     SUB ONE ;
+     STA BUFF2 ;
+     LDI BUFF2 ;
+     STA FP ;
+     LDA BUFF1 ;     now after reverted FP, store recfact's return value locally from BUFF1
+     STA BUFF2 ;
+     LDA FP ;
+     ADD EIGHT ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA SP ;        revert SP
+     SUB ONE_TWO ;
+     STA SP ;
+     LDA FP ;
+     ADD FOUR ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD EIGHT ;
+     STA BUFF1 ;
+     LDI BUFF1 ;
+     MUL BUFF2 ;
+     STA BUFF2 ;
+     LDA FP ;
+     ADD NINE ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA FP ;
+     ADD NINE ;
+     STA BUFF1 ;
+     LDI BUFF1 ;     backup return value in BUFF1
+     STA BUFF1 ;
+     LDA SP ;        calculate return value address and store in BUFF2
+     SUB TWO ;
+     STA BUFF2 ;
+     LDA BUFF1 ;     finally store return value (BUFF1) in designated address
+     STI BUFF2 ;
+     LDI SP ;        jump back to caller
+     STA BUFF1 ;
+     JMI BUFF1 ;
+     JMP L2 ;
+L1:  LDA ONE ;       calculate return value
+     STA BUFF2 ;
+     LDA FP ;
+     ADD ONE_ZERO ;
+     STA BUFF1 ;
+     LDA BUFF2 ;
+     STI BUFF1 ;
+     LDA FP ;
+     ADD ONE_ZERO ;
+     STA BUFF1 ;
+     LDI BUFF1 ;     backup return value in BUFF1
+     STA BUFF1 ;
+     LDA SP ;        calculate return value address and store in BUFF2
+     SUB TWO ;
+     STA BUFF2 ;
+     LDA BUFF1 ;     finally store return value (BUFF1) in designated address
+     STI BUFF2 ;
+     LDI SP ;        jump back to caller
+     STA BUFF1 ;
+     JMI BUFF1 ;
+L2:  

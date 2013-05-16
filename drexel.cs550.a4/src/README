@@ -33,24 +33,81 @@ The JFlex tokenizer input file, produces Yylex.java.
 > Program.java
 Includes all classes for the mini-language parser AST construction and
 compilation functionality.
+Modifications from assignment 3:
+- In order to support functions, there is no longer one symbol table. Instead,
+  each function (including main) has its own symbol tabl, and in addition they
+  all share one symbol table for constants.
+  This modification requires all memory access commands (LDA, STA etc.) to first
+  calculate the absolute address, given the current frame defined by FP. These
+  calculations also require the use of buffers. Therefore, the memory stack
+  looks like this:
+  -------------------------
+  SP
+  FP
+  BUFF1
+  BUFF2
+  -------------------------
+  CONST1
+  ...
+  CONST_n
+  -------------------------
+  main activation record
+  -------------------------
+  activation records of any
+  subsequent function calls
+  -------------------------
+
 Important added/modified classes and enums:
-- SymbolType: enum for defining a type of value in the symbol table: constant,
-  temporary, variable or a label
+- SymbolType: enum for defining a type of value in the symbol tables:
+  * constant
+  * temporary
+  * parameter
+  * variable
+  * label
+  The single constants table contains ONLY constants; each function (including
+  main) may hold all other types except constants. Naturally, main does not have
+  any parameters.
 - SymbolValue: class for a value entry in the symbol table. Includes the
-  type, value (may be null) and address (may be null)
+  type, value (may be null), address (may be null), line and comment.
+  * addresses of constants are absolute
+  * addresses of labels are line numbers (so are function addresses)
+  * addresses of parameters, variables and temporaries are OFFSETs w.r.t. the
+    containing function's FP
 - InstructionType: enum for different RAL instructions (LDA, STA etc.)
 - Instruction: class for a RAL instruction, constructed of optional label,
-  instruction and argument
+  instruction and argument. Line number and comments are optionally set.
+  * provides a factory function getInstructionsFor() which translates single
+    instructions to a list of instructions required to convert offset addresses
+    to absolute ones. For instance, say we want to load the content of address
+    15, which is the offset 2 of current FP = 13. The linked instruction contains
+    2 as address and not 15. Therefore in order to get:
+    > LDA 15 ;
+    it is translated to:
+    > LDA FP		// load FP = 13
+    > ADD CONST_2	// add the offset (address of the constant 2)
+    > STA BUFF1		// store in buffer - now contains 15
+    > LDI BUFF1		// load from address 15
 - Component: an abstract class extended by Expr, Statement and StatementList
-  to impose implementation of a translate method
+  to impose implementation of:
+  * method translate
+  * method updateSymbolTableEntries: a method that crawls the AST and accumulates
+    the variables and temporaries used for each function, to be able to know in
+    each function call how much space to allocate (i.e. what is the new value
+    of SP)
 - Program:
   The Program class is modified to provide several sets of methods:
   1) compile methods: includes the translate, link and compile methods (the
   	 latter simply calls the first two).
-     The link method sets the address field of each symbol in the symbol table.
+     The link method sets the address field of each constant in the constants
+     table, assigns line numbers to labels and initial values of FP and SP.
+     Note that linking of parameters, variables and temporaries is done
+     on-the-fly during translation, since they are offsets w.r.t FP and not
+     absolute addresses (therefore can be calculated during translation).
   2) dump to file methods: allow dumping the instructions to files, either in a
   	 symbolic or linked representation.
      Linked representation will create the corresponding memory file.
+     Functions first lines are marked with a comment; function call and return
+     instructions are commented (for debugging, but left for clarity).
   3) output methods: same as the dump methods, only output to the standard
      output.
 
@@ -89,13 +146,17 @@ Cleans all temporary files generated during the build and compile process.
 This directory contains (some of the) test cases with which we tested our project.
 Each test file has an associated folder with the output files (trans.txt etc.)
 The compiled output memory image file contains comments about which address is
-assigned to which variable, temp etc.
+assigned to which parameter, variable, temp etc.
 The test files were checked with the RAM simulator, and the results in the memory
 at the end of the process were confirmed as the expected values for the
 corresponding variables.
 Test files:
-- simple.p
-- test1.p
-- test2.p
-- test3.p
-- test4.p
+- simple.p	-- arithmetics, while
+- test1.p	-- arithmetics, if
+- test2.p	-- arithmetics, while, if
+- test3.p	-- arithmetics
+- test4.p	-- arithmetics, while, if
+- test5.p	-- simple function
+- test6.p	-- complex function (factorial)
+- test7.p	-- complex function (sum)
+- test8.p	-- complex function (recursive factorial)
