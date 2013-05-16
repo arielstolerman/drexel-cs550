@@ -161,6 +161,8 @@ assigned to which parameter, variable, temp etc.
 The test files were checked with the RAM simulator, and the results in the memory
 at the end of the process were confirmed as the expected values for the
 corresponding variables.
+*** NOTE: tests 5-8 require defining a large enough RAM_MEM to avoid a
+    segmentation fault at the end of simulation
 Test files:
 - simple.p	-- arithmetics, while
 - test1.p	-- arithmetics, if
