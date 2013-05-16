@@ -34,13 +34,13 @@ The JFlex tokenizer input file, produces Yylex.java.
 Includes all classes for the mini-language parser AST construction and
 compilation functionality.
 Modifications from assignment 3:
-- In order to support functions, there is no longer one symbol table. Instead,
-  each function (including main) has its own symbol tabl, and in addition they
-  all share one symbol table for constants.
+- In order to support functions, each function (including main) has its own
+  symbol table, and in addition they all share one symbol table for constants.
   This modification requires all memory access commands (LDA, STA etc.) to first
   calculate the absolute address, given the current frame defined by FP. These
   calculations also require the use of buffers. Therefore, the memory stack
   looks like this:
+  
   -------------------------
   SP
   FP
@@ -56,7 +56,12 @@ Modifications from assignment 3:
   activation records of any
   subsequent function calls
   -------------------------
-
+  
+- Procedure load order:
+  Main is the first procedure to be loaded, and is followed by all other
+  procedures in the order they are defined.
+  This means that the RAM load and init methods did not require any modification
+  to secure a correct initial PC (that starts at the beginning of main). 
 Important added/modified classes and enums:
 - SymbolType: enum for defining a type of value in the symbol tables:
   * constant
@@ -65,9 +70,9 @@ Important added/modified classes and enums:
   * variable
   * label
   The single constants table contains ONLY constants; each function (including
-  main) may hold all other types except constants. Naturally, main does not have
-  any parameters.
-- SymbolValue: class for a value entry in the symbol table. Includes the
+  main) may hold all other types (but no constants). Naturally, main does not
+  have any parameters.
+- SymbolValue: class for a value entry in the symbol tables. Includes the
   type, value (may be null), address (may be null), line and comment.
   * addresses of constants are absolute
   * addresses of labels are line numbers (so are function addresses)
@@ -84,16 +89,22 @@ Important added/modified classes and enums:
     > LDA 15 ;
     it is translated to:
     > LDA FP		// load FP = 13
-    > ADD CONST_2	// add the offset (address of the constant 2)
+    > ADD TWO		// add the offset (address of the constant 2)
     > STA BUFF1		// store in buffer - now contains 15
     > LDI BUFF1		// load from address 15
 - Component: an abstract class extended by Expr, Statement and StatementList
   to impose implementation of:
-  * method translate
-  * method updateSymbolTableEntries: a method that crawls the AST and accumulates
+  * translate
+  * updateSymbolTableEntries: a method that crawls the AST and accumulates
     the variables and temporaries used for each function, to be able to know in
     each function call how much space to allocate (i.e. what is the new value
     of SP)
+    Note that for simplicity variables and temporaries are maintained on the
+    activation record arbitrarily (i.e. no separation between temps and vars).
+    To support that, a more complex crawling would have been necessary. Since
+    this does not affect functionality, we left this out.
+    Parameters, however, are all stacked together at the beginning of the
+    activation record.
 - Program:
   The Program class is modified to provide several sets of methods:
   1) compile methods: includes the translate, link and compile methods (the
