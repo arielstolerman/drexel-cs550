@@ -491,19 +491,25 @@
 				(error "EQUIV arguments must be boolean expressions" exp)))))
 
 				
-;; interpreter
-;(define pc-input-prompt ";;; Proposition Calculator input:")
-;(define pc-output-prompt ";;; Proposition Calculator value:")
+;; proposition calculus interpreter
+;; given environment is represented as a list of cons cells where
+;; car is the variable name and cdr is its value
+(define (pc-interpret input env)
+	(let ((ge (setup-environment)))
+		;; add bindings to global environment
+		(pc-interpret-bind ge env)
+		(user-print (eval input ge))))
 
-;(define (pc-interpret)
-  ;(prompt-for-input pc-input-prompt)
-  ;(let ((input (read)))
-    ;(let ((output (eval input the-global-environment)))
-      ;(announce-output output-prompt)
-      ;(user-print output)))
-  ;(driver-loop))
+;; helper method to add user-defined bindings to the global environment
+(define (pc-interpret-bind env to-bind)
+	(if (null? to-bind)
+		()
+		(let ((var (caar to-bind))
+			  (val (cdar to-bind)))
+			(define-variable! var val env)
+			(pc-interpret-bind env (cdr to-bind)))))
 
 'METACIRCULAR-EVALUATOR-LOADED
 
-
+; (define-variable! var val env)
 ; (define the-global-environment (setup-environment))
