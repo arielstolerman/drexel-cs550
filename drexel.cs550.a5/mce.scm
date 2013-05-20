@@ -380,11 +380,6 @@
 
 ;;; --- proposition calculus ---
 
-;; true / false identity procedures
-
-(define (ret-true) (= 1 1))
-(define (ret-false) (= 1 0))
-
 ;; < boolexp > ? #t | #f [boolean constants]
 ;; added to list of self-evaluating expressions
 
@@ -495,6 +490,18 @@
 				;; enforce boolean arguments
 				(error "EQUIV arguments must be boolean expressions" exp)))))
 
+				
+;; interpreter
+;(define pc-input-prompt ";;; Proposition Calculator input:")
+;(define pc-output-prompt ";;; Proposition Calculator value:")
+
+;(define (pc-interpret)
+  ;(prompt-for-input pc-input-prompt)
+  ;(let ((input (read)))
+    ;(let ((output (eval input the-global-environment)))
+      ;(announce-output output-prompt)
+      ;(user-print output)))
+  ;(driver-loop))
 
 'METACIRCULAR-EVALUATOR-LOADED
 
