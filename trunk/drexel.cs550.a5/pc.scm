@@ -19,14 +19,14 @@
 
 ;; main eval method
 (define (eval exp env)
-  (cond ((boolean? exp) exp)
-        ((variable? exp) (lookup-variable-value exp env))
-		((and? exp) (eval-and exp env))
-		((or? exp) (eval-or exp env))
-		((not? exp) (eval-not exp env))
-		((implies? exp) (eval-implies exp env))
-		((equiv? exp) (eval-equiv exp env))
-        (else
+  (cond ((boolean? exp) exp)								;; boolean constants
+        ((variable? exp) (lookup-variable-value exp env))	;; boolean variables
+		((and? exp) (eval-and exp env))						;; 'and' predicate
+		((or? exp) (eval-or exp env))						;; 'or' predicate
+		((not? exp) (eval-not exp env))						;; 'not' predicate
+		((implies? exp) (eval-implies exp env))				;; 'implies' predicate
+		((equiv? exp) (eval-equiv exp env))					;; 'equiv' predicate
+        (else												;; error
          (error "Unknown expression type -- EVAL" exp))))
 
 ;; variable lookup
@@ -40,15 +40,15 @@
 			(cdar env)
 			(lookup-variable-value var (cdr env)))))
 
-;;; --- proposition calculus grammar ---
+;;; --- proposition calculus evaluation methods ---
 
-;; < boolexp > ? #t | #f [boolean constants]
+;; < boolexp > -> #t | #f [boolean constants]
 ;; self-evaluated in the main eval method
 
-;; < boolexp > ? variable [boolean variables]
+;; < boolexp > -> variable [boolean variables]
 ;; handled by lookup-variable-value
 
-;; < boolexp > ? (and boolexp ... boolexp)
+;; < boolexp > -> (and boolexp ... boolexp)
 
 (define (and? exp) (tagged-list? exp 'and))
 
@@ -75,7 +75,7 @@
 				;; enforce boolean arguments
 				(error "AND arguments must all be boolean expressions" exp)))))
 
-;; < boolexp > ? (and boolexp ... boolexp)
+;; < boolexp > -> (and boolexp ... boolexp)
 
 (define (or? exp) (tagged-list? exp 'or))
 
@@ -103,7 +103,7 @@
 				(error "OR arguments must all be boolean expressions" exp)))))
 
 
-;; < boolexp > ? (not boolexp)
+;; < boolexp > -> (not boolexp)
 
 (define (not? exp) (tagged-list? exp 'not))
 
@@ -118,7 +118,7 @@
 				;; enforce a boolean argument
 				(error "NOT argument must be a boolean expression" exp)))))
 
-;; < boolexp > ? (implies boolexp boolexp)
+;; < boolexp > -> (implies boolexp boolexp)
 
 (define (implies? exp) (tagged-list? exp 'implies))
 
@@ -135,7 +135,7 @@
 				;; enforce boolean arguments
 				(error "IMPLIES arguments must be boolean expressions" exp)))))
 
-;; < boolexp > ? (equiv boolexp boolexp)
+;; < boolexp > -> (equiv boolexp boolexp)
 
 (define (equiv? exp) (tagged-list? exp 'equiv))
 
@@ -182,11 +182,11 @@
 			())
 		(parse-list input)))
 
-;; for parsing a list expression with an operator as the CAR
+;; for parsing a list expression with an operator as the first element
 (define (parse-list l)
 	(parse-list-elems (cdr l)))
 
-;; for parsing a list expression with only arguments
+;; for parsing a list expression with only arguments (no operator)
 (define (parse-list-elems elems)
 	(if (null? elems)
 		()
