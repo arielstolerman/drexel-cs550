@@ -99,25 +99,39 @@
 
 ;; prog -> stmt-list
 
+(define (prog? exp)
+	(stmt-list? exp))
+
+(define (eval-prog exp env)
+	(eval-stmt-list exp env))
+
 ;; stmt-list -> (stmt-seq)
+
+(define (stmt-list? exp)
+	(stmt-seq? exp))
+
+(define (eval-stmt-list exp env)
+	(eval-stmt-seq exp env))
+
 
 ;; stmt-seq -> stmt | stmt stmt-seq
 
 (define (stmt-seq? exp)
-	(or (stmt? exp)
-		(and (stmt? (car exp))
-			 (stmt-seq? (cdr exp)))))
-
+	(and (stmt? (car exp))
+		 (or (eq? (length exp) 1)
+		 	 (stmt-seq? (cdr exp)))))
 
 (define (eval-stmt-seq exp env)
 	(eval-stmt-seq-helper exp env))
 
+;; recursively evaluates the next statement with the env
+;; output of the previous statement evaluation
 (define (eval-stmt-seq-helper stmts env)
 	(if (null? stmts)
 		env
 		(let ((curr-stmt (car stmts))
 			  (rest-stmts (cdr stmts)))
-			(eval-stmt-seq-helper res-stmts (eval-stmt curr-stmt env)))))
+			(eval-stmt-seq-helper rest-stmts (eval-stmt curr-stmt env)))))
 
 
 ;; stmt -> assign-stmt | if-stmt | while-stmt
@@ -213,29 +227,4 @@
 ;; evaluate user input with the empty environment
 ;; print environment at the end
 (define (interpret input)
-	(let ((env ()))
-		(eval-prog input env)
-		env))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	(eval-prog input ()))
