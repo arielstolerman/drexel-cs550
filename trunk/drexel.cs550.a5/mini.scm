@@ -54,17 +54,17 @@
 		(apply proc args)))
 		
 
-;; main eval method
-(define (eval exp env)
-	(cond	((prog? exp) (eval-prog exp env))						;; prog
-			((stmt-list? exp) (eval-stmt-list exp env))				;; stmt-list
-			((stmt-seq? exp) (eval-stmt-seq exp env))				;; stmt-seq
-			((stmt? exp) (eval-stmt exp env))						;; stmt
-			((assign-stmt? exp) (eval-assign-stmt exp env))			;; assign-stmt
-			((if-stmt? exp) (eval-if-stmt exp env))					;; if-stmt
-			((while-stmt? exp) (eval-while-stmt exp env))			;; while-stmt
-			((expr? exp) (eval-epr exp env))						;; expr
-			(else (error "Unknown expression type -- EVAL" exp))))	;; error
+;; main eval method -- NEVER USED
+;(define (eval exp env)
+;	(cond	((prog? exp) (eval-prog exp env))						;; prog
+;			((stmt-list? exp) (eval-stmt-list exp env))				;; stmt-list
+;			((stmt-seq? exp) (eval-stmt-seq exp env))				;; stmt-seq
+;			((stmt? exp) (eval-stmt exp env))						;; stmt
+;			((assign-stmt? exp) (eval-assign-stmt exp env))			;; assign-stmt
+;			((if-stmt? exp) (eval-if-stmt exp env))					;; if-stmt
+;			((while-stmt? exp) (eval-while-stmt exp env))			;; while-stmt
+;			((expr? exp) (eval-epr exp env))						;; expr
+;			(else (error "Unknown expression type -- EVAL" exp))))	;; error
 
 ;; variable lookup
 ;; environment is a single symbol table in the form of an association list
