@@ -11,7 +11,7 @@
 
 ;; --- expr ---
 
-;; integer -- good
+;; integer
 
 (eval-expr '1 ())
 ;Value: 1
@@ -19,17 +19,12 @@
 (eval-expr '-5 ())
 ;Value: -5 -- negatives are accepted since using scheme's integer? predicate
 
-;; identifier -- good
+;; identifier
 
 (eval-expr 'a (list (cons 'a 4)))
 ;Value: 4
 
-;; identifier -- bad (should error
-
-; undefined variable
-(eval-expr 'a ())
-
-;; primitive procedures -- good
+;; primitive procedures
 
 (eval-expr '(+ 8 4) ())
 ;Value: 12
@@ -42,11 +37,6 @@
 
 (eval-expr '(+ 2 (* 7 (- a 6))) (list (cons 'a 9)))
 ;Value: 23 -- ok since grammar does not define order of operations (i.e. * not necessarily precedes + or -)
-
-;; primitive procedures -- bad
-
-; undefined primitive procedure
-(eval-expr '(/ 3 4) ())
 
 
 ;; --- assign-stmt ---
@@ -93,5 +83,30 @@
 ;env on return: ((tmp . 13) (b . 21) (a . 13) (n . 0))
 
 
+;; --- error checks ---
+;; the following should error
+;; note that specific eval methods are assumed to be called only after check of
+;; the corresponding predicate, so correctness of input types is assumed
 
+; undefined variable
+(eval-expr 'a ())
 
+; undefined primitive procedure
+(eval-expr '(/ 3 4) ())
+
+; illegal assignment
+(interpret '((assign 2 4)))
+
+; illegal if (clauses must be stmt-lists)
+(interpret '((if 1 (assign a 2) (assign a 3))))
+
+; illegal if (condition must be an expr)
+(interpret '((if (assign a 2) ((assign b 3)) ((assign b 4)))))
+
+; illegal while (body must be a stmt-list)
+(interpret '((assign a 3) (while a (assign a (- a 1)))))
+
+; illegal prog/stmt-list/stmt-seq
+(interpret '(assign a 2))
+(interpret '((- 3 1) (+ 4 2)))
+(interpret '(() (assign a 2)))
