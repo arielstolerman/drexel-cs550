@@ -19,8 +19,7 @@
 	(not (eq? x 0)))
 
 (define (identifier? exp)
-	(and (symbol? exp)
-		 (not (integer? exp))))
+	(symbol? exp))
 
 ;; primitive procedures
 (define primitive-procs
