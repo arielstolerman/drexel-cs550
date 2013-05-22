@@ -26,17 +26,18 @@
         ((lambda? exp)
          (make-procedure (lambda-parameters exp)
                          (lambda-body exp)
-                         env))
+                         env))   ; don't need to store env - not used.  JRJ
         ((begin? exp) 
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval (cond->if exp) env))
         ((application? exp)
          (apply (eval (operator exp) env)
-                (list-of-values (operands exp) env)))
+                (list-of-values (operands exp) env)
+                env))  ; added env as an argument to apply.  JRJ
         (else
          (error "Unknown expression type -- EVAL" exp))))
 
-(define (apply procedure arguments)
+(define (apply procedure arguments env)  ; added env parameter. JRJ
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
         ((compound-procedure? procedure)
@@ -45,7 +46,7 @@
            (extend-environment
              (procedure-parameters procedure)
              arguments
-             (procedure-environment procedure))))
+             env ))) ;  extend runtime env instead of procedure-environment
         (else
          (error
           "Unknown procedure type -- APPLY" procedure))))
