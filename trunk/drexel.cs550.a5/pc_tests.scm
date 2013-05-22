@@ -175,6 +175,28 @@ eval '(and #t #f #t #t #t #t #t) ())
 	(list (cons 'a #t) (cons 'b #f) (cons 'c #t) (cons 'd #t) (cons 'e #f)))
 ;Value: #f
 
+;; examples posted on black-board, adjusted to our syntax:
+;; - using "interpret" instead of "beval"
+;; - using "implies" instead of "imply" (as in the rule definition on the assignment page)
+;; - using association list for environment, i.e. each binding is a cons cell and not a list of size 2
+;;   (e.g. (a . 2) rather than (a 2))
+(interpret #t ())
+;Value: #t
+(interpret 'p '((p . #t)))
+;Value: #t
+(interpret '(and #t p) '((p . #t)))
+;Value: #t
+(interpret '(and p q r) '((p . #t) (q . #t) (r . #t)))
+;Value: #t
+(interpret '(or p q r) '((p . #t) (q . #f) (r . #f)))
+;Value: #t
+(interpret '(implies p q) '((p . #t) (q . #f)))
+;Value: #f
+(interpret '(implies p q) '((p . #t) (q . #t)))
+;Value: #t
+(interpret '(equiv (implies p q) (or (not p) q)) '((p . #t) (q . #f)))
+;Value: #t
+
 
 ;; --- prover ---
 
