@@ -1,0 +1,144 @@
+Drexel CS550
+Assignment 5
+############
+Group 1:
+- Ariel Stolerman
+- Bekah Overdorf
+- Sam Snodgrass
+
+
+### Important Notes ###
+
+Before you test our code for questions 1, 2 and 5, note that:
+- we define environments as association lists, i.e. a list of cons cells where
+  car is the var and cdr is the value (not a list of size 2 where car is the var
+  and -cadr- is the value)
+- for q1 and q2, our proposition calculator defines the method "implies" and not
+  "imply", as used by the professor in tests he uploaded to blackboard.
+  We use "implies" as that's what defined for that rule on the assignment page
+
+
+### Files and Descriptions by Question ###
+
+--- Question 1 & 2 ---
+
+> pc.scm - Proposition Calculus Interpreter
+
+The code works similarly to the meta-circular evaluator. It contains:
+- the main eval method: a large cond statement that matches the given expression
+  to a type (boolean constant, variable, and etc.) and calls the corresponding
+  eval method.
+- per-rule predicates: predicate methods to check syntax match to different
+  rules. For instance, "and?" checks the expression starts with 'and.
+- per-rule eval: eval methods to evaluate the expressions. For instance,
+  "eval-and" checks there are at least 2 arguments, and then uses a helper
+  method to recursively apply scheme's "and" procedure on the evaluation of the
+  first argument and the rest.
+- lookup-variable-value: used to fetch values of bound variables from the env.
+  Env is assumed to be in the form of an association list, i.e.:
+  ((var_1 val_1) ... (var_n val_n))
+- interpret: the interpreter method, simply calls eval on the given input and
+  env.
+- prove: the prover method, that for a given input works as follows:
+  * crawls the input to create a list of variables (anything that is not a known
+    operation or a constant)
+  * recursively binds each variable to both possible values (#t or #f)
+  * at the base case - calls interpret with that path's generated env and
+    returns the evaluation of the input expression with that env
+  * a scheme "and" is applied on each split; we assume an efficient "and" is
+    applied in scheme, such that if one #f is encountered, the evaluation of
+    the rest of the branches will not occur, and #f will immediately be
+    propagated up and returned
+
+To run the code (on TUX):
+> scheme --load pc.scm
+
+interpreter:
+scheme > (interpret <input> <env>)
+example:
+scheme > (interpret '(implies a (not b)) (list (cons 'a #t) (cons 'b #f)))
+scheme > ;Value: #t
+
+prover:
+scheme > (prove <input>)
+example:
+scheme > (prove '(or a (not a)))
+scheme > ;Value: #t
+
+> pc_tests.scm - contains tests for the proposition calculus interpreter and
+  prover, which cover:
+  - rule-specific eval methods
+  	* constants
+  	* variables
+  	* and
+  	* or
+  	* not
+  	* implies
+  	* equiv
+   - interpreter - mixture of expressions
+   - prover - tautologies and non-tautologies
+
+
+--- Question 3 & 4 ---
+
+> cs550_a5_q3_q4.pdf - answers to questions 3 and 4
+  - 3) detailed trace of fact definition and call
+  - 4) example of code that evaluates to 2 different answers in static scoping
+       vs. dynamic scoping
+
+> mce.scm - the static scoping meta-circular evaluator we used to manually trace
+  for q3 and run the example of q4 (it's equivalent to ch4-mceval.scm on the
+  course website, with added primitive functions)
+
+> mce_dynamic.scm - same as mce.scm, with the eval and apply methods substituted
+  with their dynamic implementation (from the functional programming lecture
+  slides). Used to run the example of q4
+
+
+-- Question 5 ---
+
+> mini.scm - Mini-language Interpreter
+
+The code works too similarly to the meta-circular evaluator; however here we do
+not have a general "eval" method, but only rule-specific methods. The
+interpreter just calls eval-prog - the eval method specific to the top level
+program (the user input). It contains:
+- some utility methods, among them are those used to apply primitive functions
+  like +, - and *
+- per-rule predicates: same as for pc.scm; checks for expected length (e.g. 3
+  for an assign statement), and recursive checks of arguments (if needed; e.g.
+  the second element of an assign statement is an identifier).
+  It is not actually used by the interpreter, as it will output an error message
+  on an invalid input. However the call (prog? <input>) can be used to validate
+  the input prior to passing it to the interpreter.
+- per-rule eval: same as for pc.scm. eval-expr evaluates to the expression's
+  value; all other eval methods evaluate to the environment at the end of the
+  call. For instance, eval-assign-stmt on (assign a 4) will return the input env
+  with the added cons cell (a . 4).
+  Setting the modified env as the returned value helps in that we can easily
+  pass the (possibly) modified environment from one statement to the following
+- lookup-variable-value, add-update-variable: same as for pc.scm, Env is
+  represented as an association list. add-update-variable is used to either
+  add a new binding of a new variable, or update the value of an existing one.
+  It returns the modified env.
+- interpret: the mini-language interpreter, simply runs eval-prog on the input
+  with an initially empty environment
+
+To run the code (on TUX):
+> scheme --load mini.scm
+scheme > (interpret <input>)
+example (calculating 5!, assigned to m)
+scheme > (interpret '((assign n 5) (assign m 1) (while n ((assign m (* m n)) (assign n (- n 1))))))
+scheme >  ;Value: ((m . 120) (n . 0))
+
+> mini_tests.scm - contains tests for the mini-language interpreter, which
+  cover:
+  - expr
+  	* integer
+  	* identifier
+  	* primitive procedures
+   - assign-stmt
+   - if-stmt
+   - while-stmt
+   - interpreter: checks altogether (including prog, stmt-list, stmt-seq, stmt)
+   - error checks
