@@ -949,7 +949,7 @@ class ParamList {
 
 	public ParamList(String name, ParamList parlist) {
 		paramlist = parlist.getParamList();
-		paramlist.add(name);
+		paramlist.add(0,name);
 	}
 
 	public List<String> getParamList() {
