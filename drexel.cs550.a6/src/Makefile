@@ -6,15 +6,19 @@ VIEWER=more
 
 .PHONY : view compile-static compile-dynamic run-static run-dynamic clean
 
+
 # view
 view : Program.java interpreterext.cup interpreterext.flex
 	@$(VIEWER) Program.java interpreterext.cup interpreterext.flex
 
 
-### part 1 ####
+# compile
 
-run-part1 : Yylex.class parser.class sym.class Program.class
-	@java -classpath ".;java-cup-11a.jar" parser
+compile-static : compile
+
+compile-dynamic : compile
+
+compile : Yylex.class parser.class sym.class Program.class
 
 Yylex.class parser.class sym.class Program.class : Yylex.java parser.java sym.java Program.java
 	@javac -classpath java-cup-11a.jar Yylex.java parser.java sym.java Program.java
@@ -24,6 +28,18 @@ Yylex.java : interpreterext.flex
 
 parser.java sym.java : interpreterext.cup
 	@java -jar java-cup-11a.jar interpreterext.cup
+
+
+# run
+
+run-static : compile
+	@java -classpath ".;java-cup-11a.jar" parser -s
+
+run-dynamic : compile
+	@java -classpath ".;java-cup-11a.jar" parser -d
+
+
+# clean
 
 clean :
 	@rm -rf *.class
