@@ -198,6 +198,10 @@ factor ::=
 	{:
 		RESULT = p;
 	:} |
+	PROCP LPAREN expr:e RPAREN
+	{:
+		RESULT = new ProcP(e);
+	:} |
 	funcall:fc
 	{:
 		RESULT = fc;

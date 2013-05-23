@@ -145,6 +145,11 @@ abstract class Component {
 	 */
 	public abstract Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException;
+	
+	// strign representation
+	
+	@Override
+	public abstract String toString();
 }
 
 /**
@@ -222,6 +227,14 @@ class Lst extends Expr {
 	public List<Expr> getList() {
 		return list;
 	}
+	
+	@Override
+	public String toString() {
+		String res = "(";
+		for (Expr e: list)
+			res += e + ", ";
+		return res.substring(0, res.length() - 2) + ")";
+	}
 }
 
 class Ident extends Expr {
@@ -240,6 +253,11 @@ class Ident extends Expr {
 	@Override
 	public void setStaticScope(Scope scope) {
 		this.scope = scope;
+	}
+	
+	@Override
+	public String toString() {
+		return name;
 	}
 }
 
@@ -263,6 +281,11 @@ class Number extends Expr {
 	@Override
 	public void setStaticScope(Scope scope) {
 		this.scope = scope;
+	}
+	
+	@Override
+	public String toString() {
+		return value + "";
 	}
 }
 
@@ -294,6 +317,11 @@ class Times extends Expr {
 		expr1.setStaticScope(scope);
 		expr2.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		return expr1 + " * " + expr2;
+	}
 }
 
 class Plus extends Expr {
@@ -324,6 +352,11 @@ class Plus extends Expr {
 		expr1.setStaticScope(scope);
 		expr2.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		return expr1 + " + " + expr2;
+	}
 }
 
 class Minus extends Expr {
@@ -352,6 +385,11 @@ class Minus extends Expr {
 		this.scope = scope;
 		expr1.setStaticScope(scope);
 		expr2.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return expr1 + " - " + expr2;
 	}
 }
 
@@ -382,6 +420,11 @@ class FunctionCall extends Expr {
 		this.scope = scope;
 		for (Expr e: explist.getExpressions())
 			e.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "" + funcid + explist;
 	}
 }
 
@@ -419,6 +462,11 @@ class Concat extends Expr {
 		list1.setStaticScope(scope);
 		list2.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		return list1 + " || " + list2;
+	}
 }
 
 class Cons extends Expr {
@@ -455,6 +503,11 @@ class Cons extends Expr {
 		exp.setStaticScope(scope);
 		list.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		return "cons(" + exp + ", " + list + ")";
+	}
 }
 
 class Car extends Expr {
@@ -481,6 +534,11 @@ class Car extends Expr {
 	public void setStaticScope(Scope scope) {
 		this.scope = scope;
 		list.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "car(" + list + ")";
 	}
 }
 
@@ -513,6 +571,11 @@ class Cdr extends Expr {
 		this.scope = scope;
 		list.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		return "cdr(" + list + ")";
+	}
 }
 
 class NullP extends Expr {
@@ -539,6 +602,11 @@ class NullP extends Expr {
 		this.scope = scope;
 		list.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		return "nullp(" + list + ")";
+	}
 }
 
 class IntP extends Expr {
@@ -559,6 +627,11 @@ class IntP extends Expr {
 	public void setStaticScope(Scope scope) {
 		this.scope = scope;
 		exp.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "intp(" + exp + ")";
 	}
 }
 
@@ -581,6 +654,11 @@ class ListP extends Expr {
 	public void setStaticScope(Scope scope) {
 		this.scope = scope;
 		exp.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "listp(" + exp + ")";
 	}
 }
 
@@ -656,6 +734,37 @@ class Proc extends Expr implements Scope {
 	public HashMap<String, Elem> env() {
 		return procEnv;
 	}
+	
+	@Override
+	public String toString() {
+		return "proc " + parameterlist + " ...";
+	}
+}
+
+class ProcP extends Expr {
+
+	private Expr exp;
+
+	public ProcP(Expr exp) {
+		this.exp = exp;
+	}
+
+	@Override
+	public Elem eval(HashMap<String, Elem> symbolTable)
+			throws RuntimeException {
+		return exp.eval(symbolTable).isProc() ? new Elem(1)	: new Elem(0);
+	}
+
+	@Override
+	public void setStaticScope(Scope scope) {
+		this.scope = scope;
+		exp.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "procp(" + exp + ")";
+	}
 }
 
 // =============================================================================
@@ -682,7 +791,11 @@ class ReturnStatement extends Statement {
 		this.scope = scope;
 		expr.setStaticScope(scope);
 	}
-
+	
+	@Override
+	public String toString() {
+		return "return " + expr;
+	}
 }
 
 class AssignStatement extends Statement {
@@ -707,6 +820,11 @@ class AssignStatement extends Statement {
 		this.scope = scope;
 		expr.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		return name + " := " + expr;
+	}
 }
 
 class IfStatement extends Statement {
@@ -720,10 +838,6 @@ class IfStatement extends Statement {
 		stmtlist2 = list2;
 	}
 
-	public IfStatement(Expr e, StatementList list) {
-		this(e, list, null);
-	}
-
 	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		Elem cond = expr.eval(symbolTable);
@@ -732,7 +846,7 @@ class IfStatement extends Statement {
 					"received: " + cond.type());
 		if (cond.getNum() > 0) {
 			stmtlist1.eval(symbolTable);
-		} else if (stmtlist2 != null) {
+		} else {
 			stmtlist2.eval(symbolTable);
 		}
 		return null;
@@ -744,6 +858,12 @@ class IfStatement extends Statement {
 		expr.setStaticScope(scope);
 		stmtlist1.setStaticScope(scope);
 		stmtlist2.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "if " + expr + " then " +
+				stmtlist1 + " else " + stmtlist2 + "fi";
 	}
 }
 
@@ -765,8 +885,8 @@ class WhileStatement extends Statement {
 				stmtlist.eval(symbolTable);
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("WHILE condition must be an integer: "
-					+ "WHILE " + cond + " DO ... invalid");
+			throw new RuntimeException("WHILE condition must be an integer, " +
+					"received: " + cond.type());
 		}
 		return null;
 	}
@@ -776,6 +896,11 @@ class WhileStatement extends Statement {
 		this.scope = scope;
 		expr.setStaticScope(scope);
 		stmtlist.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "while " + expr + " do " + stmtlist + " od";
 	}
 }
 
@@ -797,8 +922,8 @@ class RepeatStatement extends Statement {
 				stmtlist.eval(symbolTable);
 			} while ((cond = expr.eval(symbolTable)).getNum() > 0);
 		} catch (Exception e) {
-			throw new RuntimeException("REPEAT condition must be an integer: "
-					+ "REPEAT ... UNTIL " + cond + " invalid");
+			throw new RuntimeException("REPEAT condition must be an integer, " +
+					"received: " + cond.type());
 		}
 		return null;
 	}
@@ -808,6 +933,11 @@ class RepeatStatement extends Statement {
 		this.scope = scope;
 		expr.setStaticScope(scope);
 		stmtlist.setStaticScope(scope);
+	}
+	
+	@Override
+	public String toString() {
+		return "repeat " + stmtlist + " until " + expr;
 	}
 }
 
@@ -827,6 +957,11 @@ class ParamList {
 
 	public List<String> getParamList() {
 		return parameterlist;
+	}
+	
+	@Override
+	public String toString() {
+		return parameterlist.toString().replace("[", "(").replace("]", ")");
 	}
 }
 
@@ -851,7 +986,7 @@ class ExpressionList {
 
 	@Override
 	public String toString() {
-		return list.toString();
+		return list.toString().replace("[", "(").replace("]", ")");
 	}
 }
 
@@ -889,6 +1024,14 @@ class StatementList extends Component {
 		for (Statement s: statementlist)
 			s.setStaticScope(scope);
 	}
+	
+	@Override
+	public String toString() {
+		String res = "";
+		for (Statement s: statementlist)
+			res += s + "; ";
+		return res;
+	}
 }
 
 class Program extends Component implements Scope {
@@ -897,11 +1040,14 @@ class Program extends Component implements Scope {
 	 * Flag to indicate static / dynamic scoping.
 	 */
 	public static boolean STATIC_SCOPING = true;
+	
+	// fields
 	private StatementList stmtlist;
 	private HashMap<String, Elem> progEnv = new HashMap<>();
 
 	public Program(StatementList list) {
 		stmtlist = list;
+		setStaticScopeRecursively();
 	}
 
 	@Override
@@ -927,18 +1073,11 @@ class Program extends Component implements Scope {
 	public HashMap<String, Elem> env() {
 		return progEnv;
 	}
-
-	public void dump(HashMap<String, Elem> symbolTable) {
-		System.out.println("Dumping out all the variables...");
-		if (symbolTable != null) {
-			for (String name : symbolTable.keySet()) {
-				System.out.println(name + "=" + symbolTable.get(name));
-			}
-		}
-	}
 	
 	public void dump() {
-		dump(progEnv);
+		System.out.println("Dumping global symbol table:");
+		for (String key: progEnv.keySet())
+			System.out.println(key + " = " + progEnv.get(key));
 	}
 	
 	/**
@@ -946,5 +1085,10 @@ class Program extends Component implements Scope {
 	 */
 	public static void setStaticScoping(boolean staticScoping) {
 		STATIC_SCOPING = staticScoping;
+	}
+	
+	@Override
+	public String toString() {
+		return stmtlist.toString();
 	}
 }

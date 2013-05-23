@@ -40,6 +40,7 @@ import java_cup.runtime.Symbol;
 "do" {return new Symbol(sym.DO); }
 "od" {return new Symbol(sym.OD); }
 "proc" {return new Symbol(sym.PROC); }
+"procp" {return new Symbol(sym.PROCP); }
 "end" {return new Symbol(sym.END); }
 "repeat" {return new Symbol(sym.REPEAT); }
 "until" {return new Symbol(sym.UNTIL); }
