@@ -4,7 +4,12 @@
 
 VIEWER=more
 
-.PHONY : view-part1 build run-part1 view-func1 view-func2 view-part2 run-part2 clean
+.PHONY : view compile-static compile-dynamic run-static run-dynamic clean
+
+# view
+view : Program.java interpreterext.cup interpreterext.flex
+	@$(VIEWER) Program.java interpreterext.cup interpreterext.flex
+
 
 ### part 1 ####
 
