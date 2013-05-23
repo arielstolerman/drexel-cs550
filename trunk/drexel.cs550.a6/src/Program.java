@@ -664,63 +664,59 @@ class ListP extends Expr {
 
 class Proc extends Expr implements Scope {
 
-	private ParamList parameterlist;
+	private ParamList paramlist;
 	private StatementList stmtlist;
 	private HashMap<String, Elem> procEnv;
 
 	public Proc(ParamList pl,
 			StatementList sl) {
-		parameterlist = pl;
+		paramlist = pl;
 		stmtlist = sl;
 	}
-
-	public Elem apply(HashMap<String, Elem> symbolTable,
-			ExpressionList expressionlist) throws RuntimeException {
-		// System.out.println("Executing Procedure");
-		HashMap<String, Elem> newsymbolTable = new HashMap<String, Elem>();
-
-		// bind parameters in new name table
-		// we need to get the underlying List structure that the ParamList
-		// uses...
-		Iterator<String> p = parameterlist.getParamList().iterator();
-		Iterator<Expr> e = expressionlist.getExpressions().iterator();
-
-		if (parameterlist.getParamList().size() != expressionlist
-				.getExpressions().size()) {
-			System.out.println("Param count does not match");
-			System.exit(1);
+	
+	/**
+	 * Applies the procedure on the given list of expressions as parameters and
+	 * returns the evaluated element.
+	 * If the scoping rule is set to dynamic, will use the given calling scope
+	 * symbol table.
+	 */
+	public Elem apply(HashMap<String, Elem> symbolTable, ExpressionList explist)
+			throws RuntimeException {
+		// initialize proc environment - its symbol table
+		procEnv = new HashMap<>();
+		
+		// set symbol table to use according to scope rule
+		if (Program.STATIC_SCOPING) {
+			// use scope in which proc was defined
+			procEnv.putAll(scope.env());
 		}
-		while (p.hasNext() && e.hasNext()) {
-
-			// assign the evaluation of the expression to the parameter name.
-			newsymbolTable.put(p.next(),
-					e.next().eval(symbolTable));
-			// System.out.println("Loading symbolTable for procedure with: "+p+" = "+symbolTable.get(p));
-
+		else {
+			// use scope in which proc was called
+			procEnv.putAll(symbolTable);
 		}
-		// evaluate function body using new name table and
-		// old function table
-		// eval statement list and catch return
-		// System.out.println("Beginning Proceedure Execution..");
+		
+		// add parameter bindings using the chosen scope
+		if (paramlist.numParams() != stmtlist.numStatements())
+			throw new RuntimeException("Param count does not match");
+		HashMap<String, Elem> paramBindings = new HashMap<>();
+		Iterator<String> p = paramlist.getParamList().iterator();
+		Iterator<Expr> e = explist.getExpressions().iterator();
+		while (p.hasNext() && e.hasNext())
+			paramBindings.put(p.next(), e.next().eval(procEnv));
+		procEnv.putAll(paramBindings);
+		
+		// finally, evaluate body
 		try {
-			stmtlist.eval(newsymbolTable);
+			stmtlist.eval(procEnv);
 		} catch (ReturnValue result) {
-			// Note, the result shold contain the proceedure's return value as a
-			// String
-			// System.out.println("return value = "+result.getMessage());
 			return result.getRetValue();
 		}
-		System.out.println("Error:  no return value");
-		System.exit(1);
-		// need this or the compiler will complain, but should never
-		// reach this...
-		return null;
+		throw new RuntimeException("Error: no return value");
 	}
 
 	@Override
 	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
-		// TODO Auto-generated method stub
-		return null;
+		return new Elem(this);
 	}
 
 	@Override
@@ -737,7 +733,7 @@ class Proc extends Expr implements Scope {
 	
 	@Override
 	public String toString() {
-		return "proc " + parameterlist + " ...";
+		return "proc " + paramlist + " " + stmtlist + " end";
 	}
 }
 
@@ -943,25 +939,29 @@ class RepeatStatement extends Statement {
 
 class ParamList {
 
-	private List<String> parameterlist;
+	private List<String> paramlist;
 
 	public ParamList(String name) {
-		parameterlist = new LinkedList<String>();
-		parameterlist.add(name);
+		paramlist = new LinkedList<String>();
+		paramlist.add(name);
 	}
 
 	public ParamList(String name, ParamList parlist) {
-		parameterlist = parlist.getParamList();
-		parameterlist.add(name);
+		paramlist = parlist.getParamList();
+		paramlist.add(name);
 	}
 
 	public List<String> getParamList() {
-		return parameterlist;
+		return paramlist;
+	}
+	
+	public int numParams() {
+		return paramlist.size();
 	}
 	
 	@Override
 	public String toString() {
-		return parameterlist.toString().replace("[", "(").replace("]", ")");
+		return paramlist.toString().replace("[", "(").replace("]", ")");
 	}
 }
 
@@ -994,16 +994,16 @@ class ExpressionList {
 
 class StatementList extends Component {
 
-	private LinkedList<Statement> statementlist;
+	private LinkedList<Statement> stmtlist;
 
 	public StatementList(Statement statement) {
-		statementlist = new LinkedList<Statement>();
-		statementlist.add(statement);
+		stmtlist = new LinkedList<Statement>();
+		stmtlist.add(statement);
 	}
 
 	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		for (Statement stmt : statementlist) {
+		for (Statement stmt : stmtlist) {
 			stmt.eval(symbolTable);
 		}
 		return null;
@@ -1011,24 +1011,28 @@ class StatementList extends Component {
 
 	public void insert(Statement s) {
 		// we need to add it to the front of the list
-		statementlist.add(0, s);
+		stmtlist.add(0, s);
 	}
 
 	public LinkedList<Statement> getStatements() {
-		return statementlist;
+		return stmtlist;
+	}
+	
+	public int numStatements() {
+		return stmtlist.size();
 	}
 
 	@Override
 	public void setStaticScope(Scope scope) {
 		this.scope = scope;
-		for (Statement s: statementlist)
+		for (Statement s: stmtlist)
 			s.setStaticScope(scope);
 	}
 	
 	@Override
 	public String toString() {
 		String res = "";
-		for (Statement s: statementlist)
+		for (Statement s: stmtlist)
 			res += s + "; ";
 		return res;
 	}
@@ -1062,7 +1066,9 @@ class Program extends Component implements Scope {
 	
 	@Override
 	// should never be called
-	public void setStaticScope(Scope scope) {}
+	public void setStaticScope(Scope scope) {
+		this.scope = this;
+	}
 	
 	public void setStaticScopeRecursively() {
 		for (Statement s: stmtlist.getStatements())
