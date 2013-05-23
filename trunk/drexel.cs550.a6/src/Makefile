@@ -24,10 +24,10 @@ Yylex.class parser.class sym.class Program.class : Yylex.java parser.java sym.ja
 	@javac -classpath java-cup-11a.jar Yylex.java parser.java sym.java Program.java
 
 Yylex.java : interpreterext.flex
-	@java -jar jflex.jar interpreterext.flex
+	@java -jar jflex.jar -q interpreterext.flex
 
 parser.java sym.java : interpreterext.cup
-	@java -jar java-cup-11a.jar interpreterext.cup
+	@java -jar java-cup-11a.jar -nosummary interpreterext.cup
 
 
 # run
