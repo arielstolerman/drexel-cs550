@@ -33,10 +33,10 @@ parser.java sym.java : interpreterext.cup
 # run
 
 run-static : compile
-	@java -classpath ".;java-cup-11a.jar" parser -s
+	@java -classpath ".:java-cup-11a.jar" parser -s
 
 run-dynamic : compile
-	@java -classpath ".;java-cup-11a.jar" parser -d
+	@java -classpath ".:java-cup-11a.jar" parser -d
 
 
 # clean

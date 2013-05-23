@@ -5,7 +5,7 @@ set GOOD=$TEST/good*
 set BAD=$TEST/bad*
 
 echo "Building..."
-make
+make compile
 
 echo "Good tests"
 echo "=========="
