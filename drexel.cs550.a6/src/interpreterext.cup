@@ -15,16 +15,8 @@ import java.util.*;
 import java.io.*;
 
 action code {:
-	/* code inserted into CUP$actions class
-	 * it is used by the code embedded the grammar */
-
-	/* hm is used to store and retrieve values of variables */
-	public HashMap hm = new HashMap();
-	/* var stores the used variable names, this is not necessary
-	 * but helpful to dump all the values at the end */
-	public LinkedList var = new LinkedList();
-        /* ft is used to store and retrieve the functions */
-        public HashMap ft = new HashMap();
+	// global symbol table
+	public HashMap<String,Elem> globalSymTab = new HashMap<>();
 :}
 
 parser code {:
@@ -52,7 +44,8 @@ parser code {:
 	}
 :}
 
-terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, CONCAT, LPAREN, RPAREN, LBRACKET, RBRACKET;
+terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, LPAREN, RPAREN;
+terminal CONCAT, LBRACKET, RBRACKET;
 terminal IF, THEN, ELSE, FI, WHILE, DO, OD, REPEAT, UNTIL;
 terminal DEFINE, PROC, END, RETURN;
 terminal CONS, CAR, CDR, NULLP, INTP, LISTP;
@@ -64,16 +57,17 @@ non terminal Program program;
 non terminal StatementList statement_list;
 non terminal ParamList param_list;
 non terminal ExpressionList expr_list;
-non terminal Statement statement, assign_statement, if_statement, while_statement, repeat_statement, define_statement, return_statement;
-non terminal Expr expr, term, factor, funcall, list;
+non terminal Statement statement, assign_statement, if_statement, while_statement;
+non terminal Statement repeat_statement, define_statement, return_statement;
+non terminal Expr expr, term, factor, proc, funcall, list;
 
 /* program */
 program ::=
 	statement_list:list
 	{:
 		Program program = new Program(list);
-		program.eval(hm, ft, var);
-		program.dump(hm, ft, var);
+		program.eval(globalSymTab);
+		program.dump(globalSymTab);
 	:};
 
 /* statements */
@@ -121,9 +115,11 @@ assign_statement ::=
 	:};
 
 define_statement ::=
-	DEFINE ID:i PROC LPAREN param_list:pl RPAREN statement_list:sl END
+	DEFINE ID:i expr:e
 	{:
-		RESULT = new DefineStatement(i,new Proc(pl,sl));
+		// syntactic sugar for assign statement, since now procedures are exps
+		RESULT = new AssignStatement(i,e);
+		//RESULT = new DefineStatement(i,new Proc(pl,sl));
 	:};
 
 if_statement ::=
@@ -203,6 +199,10 @@ factor ::=
 	{:
 		RESULT = new Ident(i);
 	:} |
+	proc:p
+	{:
+		RESULT = p;
+	:} |
 	funcall:fc
 	{:
 		RESULT = fc;
@@ -234,6 +234,12 @@ factor ::=
 	list:l
 	{:
 		RESULT = l;
+	:};
+
+proc ::=
+	PROC LPAREN param_list:pl RPAREN statement_list:sl END
+	{:
+		RESULT = new Proc(pl,sl);
 	:};
 
 funcall ::=
