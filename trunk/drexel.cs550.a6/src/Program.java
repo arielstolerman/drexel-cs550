@@ -98,38 +98,83 @@ class Elem {
  * Enumerator for element type.
  */
 enum ElemType {
-	NUM,
-	LIST,
-	PROC,
-	ERROR;
+	NUM("integer"),
+	LIST("list"),
+	PROC("procedure"),
+	ERROR("error");
+	
+	private ElemType(String desc) {
+		this.desc = desc;
+	}
+	
+	private String desc;
+	
+	@Override
+	public String toString() {
+		return desc;
+	}
+}
+
+/**
+ * Abstract class for everything to extend, to enforce implementation of eval.
+ */
+abstract class Component {
+	
+	/**
+	 * To hold the symbol table of the environment in which the object is
+	 * defined. To be used for procedures in static scoping mode.
+	 */
+	protected HashMap<String, Elem> staticSymbolTable;
+	
+	/**
+	 * Constructor that binds the object to the symbol table of the environment
+	 * in which it was defined.
+	 * @param staticSymbolTable
+	 */
+	public Component(HashMap<String, Elem> staticSymbolTable) {
+		this.staticSymbolTable = staticSymbolTable;
+	}
+	
+	// abstract
+	
+	/**
+	 * Evaluate method
+	 */
+	public abstract Elem eval(HashMap<String, Elem> symbolTable)
+			throws RuntimeException;
+	
+	@Override
+	public abstract String toString();
 }
 
 //=============================================================================
 
-abstract class Expr {
+// expressions
 
-	public abstract Elem eval(HashMap<String, Elem> symbolTable)
-			throws RuntimeException;
+abstract class Expr extends Component {
 
-	@Override
-	public abstract String toString();
+	public Expr(HashMap<String, Elem> staticSymbolTable) {
+		super(staticSymbolTable);
+	}
+
 }
 
 class Lst extends Expr {
 
 	private List<Expr> list;
 
-	public Lst() {
+	public Lst(HashMap<String, Elem> staticSymbolTable) {
+		super(staticSymbolTable);
 		list = new LinkedList<>();
 	}
 
-	public Lst(ExpressionList el) {
-		list = new LinkedList<>();
+	public Lst(HashMap<String, Elem> staticSymbolTable, ExpressionList el) {
+		this(staticSymbolTable);
 		list.addAll(el.getExpressions());
 	}
 
-	public Lst(Expr ex) {
-		this();
+	public Lst(HashMap<String, Elem> staticSymbolTable, Expr ex) {
+		this(staticSymbolTable);
 		list.add(ex);
 	}
 
@@ -161,7 +206,8 @@ class Ident extends Expr {
 
 	private String name;
 
-	public Ident(String s) {
+	public Ident(HashMap<String, Elem> staticSymbolTable, String s) {
+		super(staticSymbolTable);
 		name = s;
 	}
 
@@ -179,11 +225,13 @@ class Number extends Expr {
 
 	private Integer value;
 
-	public Number(int n) {
+	public Number(HashMap<String, Elem> staticSymbolTable, int n) {
+		super(staticSymbolTable);
 		value = new Integer(n);
 	}
 
-	public Number(Integer n) {
+	public Number(HashMap<String, Elem> staticSymbolTable, Integer n) {
+		super(staticSymbolTable);
 		value = n;
 	}
 
@@ -201,7 +249,8 @@ class Times extends Expr {
 
 	private Expr expr1, expr2;
 
-	public Times(Expr op1, Expr op2) {
+	public Times(HashMap<String, Elem> staticSymbolTable, Expr op1, Expr op2) {
+		super(staticSymbolTable);
 		expr1 = op1;
 		expr2 = op2;
 	}
@@ -228,7 +277,8 @@ class Plus extends Expr {
 
 	private Expr expr1, expr2;
 
-	public Plus(Expr op1, Expr op2) {
+	public Plus(HashMap<String, Elem> staticSymbolTable, Expr op1, Expr op2) {
+		super(staticSymbolTable);
 		expr1 = op1;
 		expr2 = op2;
 	}
@@ -255,7 +305,8 @@ class Minus extends Expr {
 
 	private Expr expr1, expr2;
 
-	public Minus(Expr op1, Expr op2) {
+	public Minus(HashMap<String, Elem> staticSymbolTable, Expr op1, Expr op2) {
+		super(staticSymbolTable);
 		expr1 = op1;
 		expr2 = op2;
 	}
@@ -282,7 +333,9 @@ class FunctionCall extends Expr {
 	private String funcid;
 	private ExpressionList explist;
 
-	public FunctionCall(String id, ExpressionList el) {
+	public FunctionCall(HashMap<String, Elem> staticSymbolTable, String id,
+			ExpressionList el) {
+		super(staticSymbolTable);
 		funcid = id;
 		explist = el;
 	}
@@ -311,7 +364,9 @@ class Concat extends Expr {
 	private Expr list1;
 	private Expr list2;
 
-	public Concat(Expr list1, Expr list2) {
+	public Concat(HashMap<String, Elem> staticSymbolTable, Expr list1,
+			Expr list2) {
+		super(staticSymbolTable);
 		this.list1 = list1;
 		this.list2 = list2;
 	}
@@ -344,7 +399,8 @@ class Cons extends Expr {
 	private Expr exp;
 	private Expr list;
 
-	public Cons(Expr exp, Expr list) {
+	public Cons(HashMap<String, Elem> staticSymbolTable, Expr exp, Expr list) {
+		super(staticSymbolTable);
 		this.exp = exp;
 		this.list = list;
 	}
@@ -377,7 +433,8 @@ class Car extends Expr {
 
 	private Expr list;
 
-	public Car(Expr list) {
+	public Car(HashMap<String, Elem> staticSymbolTable, Expr list) {
+		super(staticSymbolTable);
 		this.list = list;
 	}
 
@@ -403,7 +460,8 @@ class Cdr extends Expr {
 
 	private Expr list;
 
-	public Cdr(Expr list) {
+	public Cdr(HashMap<String, Elem> staticSymbolTable, Expr list) {
+		super(staticSymbolTable);
 		this.list = list;
 	}
 
@@ -433,7 +491,8 @@ class NullP extends Expr {
 
 	private Expr list;
 
-	public NullP(Expr list) {
+	public NullP(HashMap<String, Elem> staticSymbolTable, Expr list) {
+		super(staticSymbolTable);
 		this.list = list;
 	}
 
@@ -460,7 +519,8 @@ class IntP extends Expr {
 
 	private Expr exp;
 
-	public IntP(Expr exp) {
+	public IntP(HashMap<String, Elem> staticSymbolTable, Expr exp) {
+		super(staticSymbolTable);
 		this.exp = exp;
 	}
 
@@ -481,7 +541,8 @@ class ListP extends Expr {
 
 	private Expr exp;
 
-	public ListP(Expr exp) {
+	public ListP(HashMap<String, Elem> staticSymbolTable, Expr exp) {
+		super(staticSymbolTable);
 		this.exp = exp;
 	}
 
@@ -498,27 +559,94 @@ class ListP extends Expr {
 	}
 }
 
-abstract class Statement {
+class Proc extends Expr {
 
-	public Statement() {
+	private ParamList parameterlist;
+	private StatementList stmtlist;
+
+	public Proc(HashMap<String, Elem> staticSymbolTable, ParamList pl,
+			StatementList sl) {
+		super(staticSymbolTable);
+		parameterlist = pl;
+		stmtlist = sl;
 	}
 
-	public abstract void eval(HashMap<String, Elem> symbolTable)
-			throws ReturnValue, RuntimeException;
+	public Elem apply(HashMap<String, Elem> symbolTable,
+			ExpressionList expressionlist) throws RuntimeException {
+		// System.out.println("Executing Procedure");
+		HashMap<String, Elem> newsymbolTable = new HashMap<String, Elem>();
+
+		// bind parameters in new name table
+		// we need to get the underlying List structure that the ParamList
+		// uses...
+		Iterator<String> p = parameterlist.getParamList().iterator();
+		Iterator<Expr> e = expressionlist.getExpressions().iterator();
+
+		if (parameterlist.getParamList().size() != expressionlist
+				.getExpressions().size()) {
+			System.out.println("Param count does not match");
+			System.exit(1);
+		}
+		while (p.hasNext() && e.hasNext()) {
+
+			// assign the evaluation of the expression to the parameter name.
+			newsymbolTable.put(p.next(),
+					e.next().eval(symbolTable));
+			// System.out.println("Loading symbolTable for procedure with: "+p+" = "+symbolTable.get(p));
+
+		}
+		// evaluate function body using new name table and
+		// old function table
+		// eval statement list and catch return
+		// System.out.println("Beginning Proceedure Execution..");
+		try {
+			stmtlist.eval(newsymbolTable);
+		} catch (ReturnValue result) {
+			// Note, the result shold contain the proceedure's return value as a
+			// String
+			// System.out.println("return value = "+result.getMessage());
+			return result.getRetValue();
+		}
+		System.out.println("Error:  no return value");
+		System.exit(1);
+		// need this or the compiler will complain, but should never
+		// reach this...
+		return null;
+	}
 
 	@Override
-	public abstract String toString();
+	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+
+// =============================================================================
+
+// statements
+
+abstract class Statement extends Component {
+	public Statement(HashMap<String, Elem> staticSymbolTable) {
+		super(staticSymbolTable);
+	}
 }
 
 class ReturnStatement extends Statement {
 
 	private Expr expr;
 
-	public ReturnStatement(Expr e) {
+	public ReturnStatement(HashMap<String, Elem> staticSymbolTable, Expr e) {
+		super(staticSymbolTable);
 		expr = e;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws ReturnValue, RuntimeException {
 		throw new ReturnValue(expr.eval(symbolTable));
 	}
@@ -535,14 +663,17 @@ class AssignStatement extends Statement {
 	private String name;
 	private Expr expr;
 
-	public AssignStatement(String id, Expr e) {
+	public AssignStatement(HashMap<String, Elem> staticSymbolTable, String id,
+			Expr e) {
+		super(staticSymbolTable);
 		name = id;
 		expr = e;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		symbolTable.put(name, expr.eval(symbolTable));
+		return null;
 	}
 
 	@Override
@@ -556,28 +687,31 @@ class IfStatement extends Statement {
 	private Expr expr;
 	private StatementList stmtlist1, stmtlist2;
 
-	public IfStatement(Expr e, StatementList list1, StatementList list2) {
+	public IfStatement(HashMap<String, Elem> staticSymbolTable, Expr e,
+			StatementList list1, StatementList list2) {
+		super(staticSymbolTable);
 		expr = e;
 		stmtlist1 = list1;
 		stmtlist2 = list2;
 	}
 
-	public IfStatement(Expr e, StatementList list) {
-		expr = e;
-		stmtlist1 = list;
+	public IfStatement(HashMap<String, Elem> staticSymbolTable, Expr e,
+			StatementList list) {
+		this(staticSymbolTable, e, list, null);
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		Elem cond = expr.eval(symbolTable);
 		if (!cond.isNum())
-			throw new RuntimeException("IF condition must be an integer: "
-					+ "IF " + cond + " THEN ... invalid");
+			throw new RuntimeException("IF condition must be an integer, " +
+					"received: " + cond.type());
 		if (cond.getNum() > 0) {
 			stmtlist1.eval(symbolTable);
-		} else {
+		} else if (stmtlist2 != null) {
 			stmtlist2.eval(symbolTable);
 		}
+		return null;
 	}
 
 	@Override
@@ -591,12 +725,14 @@ class WhileStatement extends Statement {
 	private Expr expr;
 	private StatementList stmtlist;
 
-	public WhileStatement(Expr e, StatementList list) {
+	public WhileStatement(HashMap<String, Elem> staticSymbolTable, Expr e,
+			StatementList list) {
+		super(staticSymbolTable);
 		expr = e;
 		stmtlist = list;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		Elem cond = null;
 		try {
@@ -607,6 +743,7 @@ class WhileStatement extends Statement {
 			throw new RuntimeException("WHILE condition must be an integer: "
 					+ "WHILE " + cond + " DO ... invalid");
 		}
+		return null;
 	}
 
 	@Override
@@ -620,12 +757,14 @@ class RepeatStatement extends Statement {
 	private Expr expr;
 	private StatementList sl;
 
-	public RepeatStatement(StatementList list, Expr e) {
+	public RepeatStatement(HashMap<String, Elem> staticSymbolTable,
+			StatementList list, Expr e) {
+		super(staticSymbolTable);
 		expr = e;
 		sl = list;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		Elem cond = null;
 		try {
@@ -636,6 +775,7 @@ class RepeatStatement extends Statement {
 			throw new RuntimeException("REPEAT condition must be an integer: "
 					+ "REPEAT ... UNTIL " + cond + " invalid");
 		}
+		return null;
 	}
 
 	@Override
@@ -741,73 +881,6 @@ class StatementList {
 		return res;
 	}
 
-}
-
-class Proc extends Expr {
-
-	private ParamList parameterlist;
-	private StatementList stmtlist;
-	//private 
-
-	public Proc(ParamList pl, StatementList sl) {
-		parameterlist = pl;
-		stmtlist = sl;
-	}
-
-	public Elem apply(HashMap<String, Elem> symbolTable,
-			ExpressionList expressionlist) throws RuntimeException {
-		// System.out.println("Executing Procedure");
-		HashMap<String, Elem> newsymbolTable = new HashMap<String, Elem>();
-
-		// bind parameters in new name table
-		// we need to get the underlying List structure that the ParamList
-		// uses...
-		Iterator<String> p = parameterlist.getParamList().iterator();
-		Iterator<Expr> e = expressionlist.getExpressions().iterator();
-
-		if (parameterlist.getParamList().size() != expressionlist
-				.getExpressions().size()) {
-			System.out.println("Param count does not match");
-			System.exit(1);
-		}
-		while (p.hasNext() && e.hasNext()) {
-
-			// assign the evaluation of the expression to the parameter name.
-			newsymbolTable.put(p.next(),
-					e.next().eval(symbolTable));
-			// System.out.println("Loading symbolTable for procedure with: "+p+" = "+symbolTable.get(p));
-
-		}
-		// evaluate function body using new name table and
-		// old function table
-		// eval statement list and catch return
-		// System.out.println("Beginning Proceedure Execution..");
-		try {
-			stmtlist.eval(newsymbolTable);
-		} catch (ReturnValue result) {
-			// Note, the result shold contain the proceedure's return value as a
-			// String
-			// System.out.println("return value = "+result.getMessage());
-			return result.getRetValue();
-		}
-		System.out.println("Error:  no return value");
-		System.exit(1);
-		// need this or the compiler will complain, but should never
-		// reach this...
-		return null;
-	}
-
-	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String toString() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }
 
 class Program {
