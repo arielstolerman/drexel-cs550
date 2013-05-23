@@ -108,8 +108,7 @@ enum ElemType {
 
 abstract class Expr {
 
-	public abstract Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public abstract Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException;
 
 	@Override
@@ -140,12 +139,11 @@ class Lst extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		LinkedList<Elem> res = new LinkedList<>();
 		for (Expr e : list)
-			res.add(e.eval(symbolTable, funcTable));
+			res.add(e.eval(symbolTable));
 		return new Elem(res);
 	}
 
@@ -167,8 +165,7 @@ class Ident extends Expr {
 		name = s;
 	}
 
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable) {
+	public Elem eval(HashMap<String, Elem> symbolTable) {
 		return symbolTable.get(name);
 	}
 
@@ -190,8 +187,7 @@ class Number extends Expr {
 		value = n;
 	}
 
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable) {
+	public Elem eval(HashMap<String, Elem> symbolTable) {
 		return new Elem(value);
 	}
 
@@ -210,11 +206,10 @@ class Times extends Expr {
 		expr2 = op2;
 	}
 
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		Elem e1 = expr1.eval(symbolTable, funcTable);
-		Elem e2 = expr2.eval(symbolTable, funcTable);
+		Elem e1 = expr1.eval(symbolTable);
+		Elem e2 = expr2.eval(symbolTable);
 		if (e1.isList() || e2.isList()) {
 			throw new RuntimeException("TIMES called on a list: " + e1
 					+ " TIMES " + e2 + " invalid");
@@ -238,11 +233,10 @@ class Plus extends Expr {
 		expr2 = op2;
 	}
 
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		Elem e1 = expr1.eval(symbolTable, funcTable);
-		Elem e2 = expr2.eval(symbolTable, funcTable);
+		Elem e1 = expr1.eval(symbolTable);
+		Elem e2 = expr2.eval(symbolTable);
 		if (e1.isList() || e2.isList()) {
 			throw new RuntimeException("PLUS called on a list: " + e1
 					+ " PLUS " + e2 + " invalid");
@@ -266,11 +260,10 @@ class Minus extends Expr {
 		expr2 = op2;
 	}
 
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		Elem e1 = expr1.eval(symbolTable, funcTable);
-		Elem e2 = expr2.eval(symbolTable, funcTable);
+		Elem e1 = expr1.eval(symbolTable);
+		Elem e2 = expr2.eval(symbolTable);
 		if (e1.isList() || e2.isList()) {
 			throw new RuntimeException("MINUS called on a list: " + e1
 					+ " MINUS " + e2 + " invalid");
@@ -294,10 +287,14 @@ class FunctionCall extends Expr {
 		explist = el;
 	}
 
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		return funcTable.get(funcid).apply(symbolTable, funcTable, explist);
+		Proc proc = symbolTable.get(funcid).getProc();
+		if (proc == null) {
+			throw new RuntimeException("attempted to apply a variable that " +
+					"is not a procedure: " + funcid);
+		}
+		return proc.apply(symbolTable, explist);
 	}
 
 	@Override
@@ -320,11 +317,10 @@ class Concat extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		Elem e1 = list1.eval(symbolTable, funcTable);
-		Elem e2 = list2.eval(symbolTable, funcTable);
+		Elem e1 = list1.eval(symbolTable);
+		Elem e2 = list2.eval(symbolTable);
 
 		if (!e1.isList() || !e2.isList()) {
 			throw new RuntimeException("Parameter to CONCAT not a list: " + e1
@@ -354,11 +350,10 @@ class Cons extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		Elem expElem = exp.eval(symbolTable, funcTable);
-		Elem listElem = list.eval(symbolTable, funcTable);
+		Elem expElem = exp.eval(symbolTable);
+		Elem listElem = list.eval(symbolTable);
 
 		if (!listElem.isList()) {
 			throw new RuntimeException("Second parameter to CONS not a list: "
@@ -387,11 +382,10 @@ class Car extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 
-		Elem e = list.eval(symbolTable, funcTable);
+		Elem e = list.eval(symbolTable);
 		if (!e.isList()) {
 			throw new RuntimeException("Parameter to CAR not a list: "
 					+ "CAR ( " + e + " )" + " invalid");
@@ -414,11 +408,10 @@ class Cdr extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 
-		Elem e = list.eval(symbolTable, funcTable);
+		Elem e = list.eval(symbolTable);
 		if (!(e.isList())) {
 			throw new RuntimeException("Parameter to CDR not a list: "
 					+ "CDR ( " + e + " )" + " invalid");
@@ -445,11 +438,10 @@ class NullP extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 
-		Elem e = list.eval(symbolTable, funcTable);
+		Elem e = list.eval(symbolTable);
 
 		if (!(e.isList())) {
 			throw new RuntimeException("Parameter to NULLP not a list: "
@@ -473,10 +465,9 @@ class IntP extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		return exp.eval(symbolTable, funcTable).isNum() ? new Elem(1)
+		return exp.eval(symbolTable).isNum() ? new Elem(1)
 				: new Elem(0);
 	}
 
@@ -495,10 +486,9 @@ class ListP extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		return exp.eval(symbolTable, funcTable).isList() ? new Elem(1)
+		return exp.eval(symbolTable).isList() ? new Elem(1)
 				: new Elem(0);
 	}
 
@@ -513,39 +503,11 @@ abstract class Statement {
 	public Statement() {
 	}
 
-	public abstract void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public abstract void eval(HashMap<String, Elem> symbolTable)
 			throws ReturnValue, RuntimeException;
 
 	@Override
 	public abstract String toString();
-}
-
-// added for 2c
-class DefineStatement extends Statement {
-
-	private String name;
-	private Proc proc;
-
-	// private ParamList paramlist;
-	// private StatementList statementlist;
-
-	public DefineStatement(String id, Proc process) {
-		name = id;
-		proc = process;
-	}
-
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> functable) {
-		// get the named proc object from the function table.
-		// System.out.println("Adding Process:"+name+" to funcTable");
-		functable.put(name, proc);
-	}
-
-	@Override
-	public String toString() {
-		return "DEFINE " + name + " " + proc;
-	}
 }
 
 class ReturnStatement extends Statement {
@@ -556,10 +518,9 @@ class ReturnStatement extends Statement {
 		expr = e;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public void eval(HashMap<String, Elem> symbolTable)
 			throws ReturnValue, RuntimeException {
-		throw new ReturnValue(expr.eval(symbolTable, funcTable));
+		throw new ReturnValue(expr.eval(symbolTable));
 	}
 
 	@Override
@@ -579,13 +540,9 @@ class AssignStatement extends Statement {
 		expr = e;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public void eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		// insert the variable with the specified name into the table with
-		// the evaluated result
-		symbolTable.put(name, expr.eval(symbolTable, funcTable));
-
+		symbolTable.put(name, expr.eval(symbolTable));
 	}
 
 	@Override
@@ -610,17 +567,16 @@ class IfStatement extends Statement {
 		stmtlist1 = list;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public void eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		Elem cond = expr.eval(symbolTable, funcTable);
+		Elem cond = expr.eval(symbolTable);
 		if (!cond.isNum())
 			throw new RuntimeException("IF condition must be an integer: "
 					+ "IF " + cond + " THEN ... invalid");
 		if (cond.getNum() > 0) {
-			stmtlist1.eval(symbolTable, funcTable);
+			stmtlist1.eval(symbolTable);
 		} else {
-			stmtlist2.eval(symbolTable, funcTable);
+			stmtlist2.eval(symbolTable);
 		}
 	}
 
@@ -640,13 +596,12 @@ class WhileStatement extends Statement {
 		stmtlist = list;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public void eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		Elem cond = null;
 		try {
-			while ((cond = expr.eval(symbolTable, funcTable)).getNum() > 0) {
-				stmtlist.eval(symbolTable, funcTable);
+			while ((cond = expr.eval(symbolTable)).getNum() > 0) {
+				stmtlist.eval(symbolTable);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("WHILE condition must be an integer: "
@@ -670,14 +625,13 @@ class RepeatStatement extends Statement {
 		sl = list;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public void eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 		Elem cond = null;
 		try {
 			do {
-				sl.eval(symbolTable, funcTable);
-			} while ((cond = expr.eval(symbolTable, funcTable)).getNum() > 0);
+				sl.eval(symbolTable);
+			} while ((cond = expr.eval(symbolTable)).getNum() > 0);
 		} catch (Exception e) {
 			throw new RuntimeException("REPEAT condition must be an integer: "
 					+ "REPEAT ... UNTIL " + cond + " invalid");
@@ -741,6 +695,7 @@ class ExpressionList {
  */
 class ReturnValue extends RuntimeException {
 
+	private static final long serialVersionUID = -7380156579538751703L;
 	private Elem retValue;
 
 	public ReturnValue(Elem retValue) {
@@ -761,12 +716,11 @@ class StatementList {
 		statementlist.add(statement);
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable)
+	public void eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
 
 		for (Statement stmt : statementlist) {
-			stmt.eval(symbolTable, funcTable);
+			stmt.eval(symbolTable);
 		}
 	}
 
@@ -789,7 +743,7 @@ class StatementList {
 
 }
 
-class Proc {
+class Proc extends Expr {
 
 	private ParamList parameterlist;
 	private StatementList stmtlist;
@@ -801,7 +755,6 @@ class Proc {
 	}
 
 	public Elem apply(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable,
 			ExpressionList expressionlist) throws RuntimeException {
 		// System.out.println("Executing Procedure");
 		HashMap<String, Elem> newsymbolTable = new HashMap<String, Elem>();
@@ -821,7 +774,7 @@ class Proc {
 
 			// assign the evaluation of the expression to the parameter name.
 			newsymbolTable.put(p.next(),
-					e.next().eval(symbolTable, funcTable));
+					e.next().eval(symbolTable));
 			// System.out.println("Loading symbolTable for procedure with: "+p+" = "+symbolTable.get(p));
 
 		}
@@ -830,7 +783,7 @@ class Proc {
 		// eval statement list and catch return
 		// System.out.println("Beginning Proceedure Execution..");
 		try {
-			stmtlist.eval(newsymbolTable, funcTable);
+			stmtlist.eval(newsymbolTable);
 		} catch (ReturnValue result) {
 			// Note, the result shold contain the proceedure's return value as a
 			// String
@@ -843,6 +796,18 @@ class Proc {
 		// reach this...
 		return null;
 	}
+
+	@Override
+	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
 
 class Program {
@@ -853,25 +818,17 @@ class Program {
 		stmtlist = list;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable) {
+	public void eval(HashMap<String, Elem> symbolTable) {
 
-		stmtlist.eval(symbolTable, funcTable);
+		stmtlist.eval(symbolTable);
 
 	}
 
-	public void dump(HashMap<String, Elem> symbolTable,
-			HashMap<String, Proc> funcTable) {
-		// System.out.println(hm.values());
+	public void dump(HashMap<String, Elem> symbolTable) {
 		System.out.println("Dumping out all the variables...");
 		if (symbolTable != null) {
 			for (String name : symbolTable.keySet()) {
 				System.out.println(name + "=" + symbolTable.get(name));
-			}
-		}
-		if (funcTable != null) {
-			for (String name : funcTable.keySet()) {
-				System.out.println("Function: " + name + " defined...");
 			}
 		}
 	}
