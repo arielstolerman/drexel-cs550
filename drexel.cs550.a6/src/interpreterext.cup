@@ -42,7 +42,7 @@ parser code {:
 terminal SEMI, PLUS, MINUS, TIMES, ASSIGN, LPAREN, RPAREN;
 terminal CONCAT, LBRACKET, RBRACKET;
 terminal IF, THEN, ELSE, FI, WHILE, DO, OD, REPEAT, UNTIL;
-terminal DEFINE, PROC, END, RETURN;
+terminal DEFINE, PROC, PROCP, END, RETURN;
 terminal CONS, CAR, CDR, NULLP, INTP, LISTP;
 terminal Integer NUMBER;
 terminal COMMA;
