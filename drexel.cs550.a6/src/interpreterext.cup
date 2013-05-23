@@ -65,9 +65,9 @@ non terminal Expr expr, term, factor, proc, funcall, list;
 program ::=
 	statement_list:list
 	{:
-		Program program = new Program(list);
-		program.eval(globalSymTab);
-		program.dump(globalSymTab);
+		Program program = new Program(globalSymTab, list);
+		program.eval();
+		program.dump();
 	:};
 
 /* statements */
