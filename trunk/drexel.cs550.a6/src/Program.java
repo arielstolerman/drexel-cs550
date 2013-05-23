@@ -136,13 +136,18 @@ abstract class Component {
 	}
 	
 	/**
+	 * @return the static symbol table of the environment in which this object
+	 * is evaluated.
+	 */
+	public HashMap<String, Elem> staticSymTab() {
+		return staticSymbolTable;
+	}
+	
+	/**
 	 * Evaluate method
 	 */
 	public abstract Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException;
-	
-	@Override
-	public abstract String toString();
 }
 
 /**
@@ -845,21 +850,23 @@ class ExpressionList {
 
 // =============================================================================
 
-class StatementList {
+class StatementList extends Component {
 
 	private LinkedList<Statement> statementlist;
 
-	public StatementList(Statement statement) {
+	public StatementList(HashMap<String, Elem> staticSymbolTable,
+			Statement statement) {
+		super(staticSymbolTable);
 		statementlist = new LinkedList<Statement>();
 		statementlist.add(statement);
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable)
+	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-
 		for (Statement stmt : statementlist) {
 			stmt.eval(symbolTable);
 		}
+		return null;
 	}
 
 	public void insert(Statement s) {
@@ -881,18 +888,26 @@ class StatementList {
 
 }
 
-class Program {
+class Program extends Component {
 
+	/**
+	 * Flag to indicate static / dynamic scoping.
+	 */
+	public static boolean STATIC_SCOPING = true;
 	private StatementList stmtlist;
 
-	public Program(StatementList list) {
+	public Program(HashMap<String, Elem> staticSymbolTable, StatementList list) {
+		super(staticSymbolTable);
 		stmtlist = list;
 	}
 
-	public void eval(HashMap<String, Elem> symbolTable) {
-
+	public Elem eval(HashMap<String, Elem> symbolTable) {
 		stmtlist.eval(symbolTable);
-
+		return null;
+	}
+	
+	public void eval() {
+		stmtlist.eval(staticSymbolTable);
 	}
 
 	public void dump(HashMap<String, Elem> symbolTable) {
@@ -902,5 +917,16 @@ class Program {
 				System.out.println(name + "=" + symbolTable.get(name));
 			}
 		}
+	}
+	
+	public void dump() {
+		dump(staticSymbolTable);
+	}
+	
+	/**
+	 * Sets whether to use static or dynamic scoping.
+	 */
+	public static void setStaticScoping(boolean staticScoping) {
+		STATIC_SCOPING = staticScoping;
 	}
 }
