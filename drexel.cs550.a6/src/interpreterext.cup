@@ -14,11 +14,6 @@ import java_cup.runtime.*;
 import java.util.*;
 import java.io.*;
 
-action code {:
-	// global symbol table
-	public HashMap<String,Elem> globalSymTab = new HashMap<>();
-:}
-
 parser code {:
 	
 	/* this part is included in the parser class */
@@ -65,7 +60,7 @@ non terminal Expr expr, term, factor, proc, funcall, list;
 program ::=
 	statement_list:list
 	{:
-		Program program = new Program(globalSymTab, list);
+		Program program = new Program(list);
 		program.eval();
 		program.dump();
 	:};
