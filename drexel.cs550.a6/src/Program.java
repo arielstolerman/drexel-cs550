@@ -135,8 +135,6 @@ abstract class Component {
 		this.staticSymbolTable = staticSymbolTable;
 	}
 	
-	// abstract
-	
 	/**
 	 * Evaluate method
 	 */
@@ -145,6 +143,23 @@ abstract class Component {
 	
 	@Override
 	public abstract String toString();
+}
+
+/**
+ * Wrapper for statement "return" values
+ */
+class ReturnValue extends RuntimeException {
+
+	private static final long serialVersionUID = -7380156579538751703L;
+	private Elem retValue;
+
+	public ReturnValue(Elem retValue) {
+		this.retValue = retValue;
+	}
+
+	public Elem getRetValue() {
+		return retValue;
+	}
 }
 
 //=============================================================================
@@ -784,7 +799,6 @@ class RepeatStatement extends Statement {
 	}
 }
 
-// added for 2c
 class ParamList {
 
 	private List<String> parameterlist;
@@ -804,7 +818,6 @@ class ParamList {
 	}
 }
 
-// Added for 2c
 class ExpressionList {
 
 	private LinkedList<Expr> list;
@@ -830,22 +843,7 @@ class ExpressionList {
 	}
 }
 
-/**
- * Wrapper for statement "return" values
- */
-class ReturnValue extends RuntimeException {
-
-	private static final long serialVersionUID = -7380156579538751703L;
-	private Elem retValue;
-
-	public ReturnValue(Elem retValue) {
-		this.retValue = retValue;
-	}
-
-	public Elem getRetValue() {
-		return retValue;
-	}
-}
+// =============================================================================
 
 class StatementList {
 
