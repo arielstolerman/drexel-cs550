@@ -14,16 +14,30 @@ import java_cup.runtime.*;
 import java.util.*;
 import java.io.*;
 
+
+
 parser code {:
 	
 	/* this part is included in the parser class */
 	public static void main (String args[]) throws Exception
 	{
+		// parse arguments
+		String path = null;
+		for (int i = 0; i < args.length; i++) {
+			if (args[i].equals("-i") && i < args.length - 1)
+				path = args[i + 1];
+			else if (args[i].equals("-s"))
+				Program.STATIC_SCOPING = true;
+			else if (args[i].equals("-d"))
+				Program.STATIC_SCOPING = false;
+		}
+		
+		// parse
 		try
 		{
 			InputStream is = System.in;
-			if (args.length == 2 && args[0].equals("-i"))
-				is = new FileInputStream(new File(args[1]));
+			if (path != null)
+				is = new FileInputStream(new File(path));
 			new parser(new Yylex(is)).parse();
 		}
 		catch(RuntimeException ex)
@@ -33,7 +47,7 @@ parser code {:
 		}
 		catch(Exception ex)
 		{
-			System.out.println("Other Exception: " + ex.getMessage());
+			System.out.println("Exception: " + ex.getMessage());
 			System.exit(-1);
 		}
 	}

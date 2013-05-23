@@ -409,8 +409,8 @@ class FunctionCall extends Expr {
 			throws RuntimeException {
 		Proc proc = symbolTable.get(funcid).getProc();
 		if (proc == null) {
-			throw new RuntimeException("attempted to apply a variable that " +
-					"is not a procedure: " + funcid);
+			throw new RuntimeException("attempted to apply an undefined " +
+					"procedure or a non-procedure variable: " + funcid);
 		}
 		return proc.apply(symbolTable, explist);
 	}
@@ -553,7 +553,6 @@ class Cdr extends Expr {
 	@Override
 	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-
 		Elem e = list.eval(symbolTable);
 		if (!(e.isList())) {
 			throw new RuntimeException("Parameter to CDR not a list: "
@@ -695,14 +694,16 @@ class Proc extends Expr implements Scope {
 			procEnv.putAll(symbolTable);
 		}
 		
-		// add parameter bindings using the chosen scope
-		if (paramlist.numParams() != stmtlist.numStatements())
-			throw new RuntimeException("Param count does not match");
+		// add parameter bindings using the scope of calling procedure
+		int numP = paramlist.numParams(), numE = explist.numExpressions();
+		if (numP != numE)
+			throw new RuntimeException("Param count does not match, expected " +
+					numP + ", received " + numE);
 		HashMap<String, Elem> paramBindings = new HashMap<>();
 		Iterator<String> p = paramlist.getParamList().iterator();
 		Iterator<Expr> e = explist.getExpressions().iterator();
 		while (p.hasNext() && e.hasNext())
-			paramBindings.put(p.next(), e.next().eval(procEnv));
+			paramBindings.put(p.next(), e.next().eval(symbolTable));
 		procEnv.putAll(paramBindings);
 		
 		// finally, evaluate body
@@ -982,6 +983,10 @@ class ExpressionList {
 
 	public List<Expr> getExpressions() {
 		return list;
+	}
+	
+	public int numExpressions() {
+		return list.size();
 	}
 
 	@Override
