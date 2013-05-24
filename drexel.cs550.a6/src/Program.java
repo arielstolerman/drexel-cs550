@@ -246,8 +246,11 @@ class Ident extends Expr {
 	}
 
 	@Override
-	public Elem eval(HashMap<String, Elem> symbolTable) {
-		return symbolTable.get(name);
+	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		Elem e = symbolTable.get(name);
+		if (e == null)
+			throw new RuntimeException("undefined variable: " + name);
+		return e;
 	}
 	
 	@Override
@@ -407,10 +410,15 @@ class FunctionCall extends Expr {
 	@Override
 	public Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException {
-		Proc proc = symbolTable.get(funcid).getProc();
-		if (proc == null) {
+		Elem procElem = symbolTable.get(funcid);
+		if (procElem == null) {
 			throw new RuntimeException("attempted to apply an undefined " +
-					"procedure or a non-procedure variable: " + funcid);
+					"procedure: " + funcid);
+		}
+		Proc proc = procElem.getProc();
+		if (proc == null) {
+			throw new RuntimeException("attempted to apply a non-procedure " +
+					"variable: " + funcid);
 		}
 		return proc.apply(symbolTable, explist);
 	}
