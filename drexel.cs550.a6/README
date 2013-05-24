@@ -80,6 +80,27 @@ Important classes and functionality:
 - ProcP: a predicate to check if an expression is a proc, as mentioned above
 - Map: a map of a list using a proc, similar to scheme, as mentioned above
 
+Static vs. dynamic scoping and environment representation:
+- the environment is represented not by a list of frames, but by a single
+  "merge" frame, i.e. a single symbol table that contains all variables with
+  their "closest" value when looking up the chain of frames. For instance, if
+  an environment contains
+  frame 0: [x := 1, y :=2]
+  frame 1: [x := 4, z := 5]
+  in our implementation, on frame 1's level, there will be just one frame that
+  is the merge of the two frames, as follows:
+  [x := 4, y := 2, z := 5]
+  where x is taken from the "closest" frame (therefore it is 4) and y is taken
+  since it appears up the list of frames.
+- static vs. dynamic scoping:
+  everytime a procedure is called, it starts with preparing the call environment
+  by copying the relevant scope's symbol table and then evaluate the parameters
+  in the calling scope's context. The relevant scope is the part that differs:
+  * static scoping: copy the symbol table of the scope in which the procedure
+    is DEFINED
+  * dynamic scoping: copy the symbol table of the scope in which the procedure
+    is CALLED
+
 
 ### Build instructions ###
 
