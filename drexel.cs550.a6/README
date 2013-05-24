@@ -9,8 +9,8 @@ Group 1:
 
 ### summary ###
 
-Extension of the mini-language (that supports lists) to treat procedures as
-expressions.
+Extension of the mini-language (that supports lists, our implementation from
+assignment 2) to treat procedures as expressions.
 
 ### IMPORTANT NOTES ###
 
@@ -34,7 +34,13 @@ Java JFlex library
 
 > interpretertext.cup
 The CUP grammar definition input file, produces parser.java and sym.java.
-Defines the parser grammar. Added grammar:
+Defines the parser grammar. Added / modified grammar:
+- added token for checking if an expression is a procedure (PROCP)
+- modified define_statement to be a syntactic sugar for assign_statement (since
+  now procs are expressions, so there is no difference)
+- added derivation of factor to proc (sort of a lambda expression)
+- 
+
 - added tokens for supporting lists and list operations (LBRACKET, CONS, etc.)
 - added grammar derivation rules that define lists as a type of expressions
 

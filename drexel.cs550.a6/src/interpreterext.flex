@@ -6,8 +6,8 @@
  *
  * --------------------------------------------------------
  *
- * Group 1 Extension:
- * added support for lists of integers and other such lists
+ * Group 1 Extension: supports lists (and procp - to check if an expression
+ * is a proc)
  */
 
 import java_cup.runtime.Symbol;
@@ -41,6 +41,7 @@ import java_cup.runtime.Symbol;
 "od" {return new Symbol(sym.OD); }
 "proc" {return new Symbol(sym.PROC); }
 "procp" {return new Symbol(sym.PROCP); }
+"map" {return new Symbol(sym.MAP); }
 "end" {return new Symbol(sym.END); }
 "repeat" {return new Symbol(sym.REPEAT); }
 "until" {return new Symbol(sym.UNTIL); }

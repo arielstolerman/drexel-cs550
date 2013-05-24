@@ -689,6 +689,20 @@ class Proc extends Expr implements Scope {
 	 */
 	public Elem apply(HashMap<String, Elem> symbolTable, ExpressionList explist)
 			throws RuntimeException {
+		LinkedList<Elem> elems = new LinkedList<>();
+		for (Expr expr: explist.getExpressions())
+			elems.add(expr.eval(symbolTable));
+		return apply(symbolTable, elems);
+	}
+	
+	/**
+	 * Applies the procedure on the given list of evaluated expressions as
+	 * parameters and returns the evaluated element.
+	 * If the scoping rule is set to dynamic, will use the given calling scope
+	 * symbol table.
+	 */
+	public Elem apply(HashMap<String, Elem> symbolTable, List<Elem> elems)
+			throws RuntimeException {
 		// initialize proc environment - its symbol table
 		procEnv = new HashMap<>();
 		
@@ -702,16 +716,16 @@ class Proc extends Expr implements Scope {
 			procEnv.putAll(symbolTable);
 		}
 		
-		// add parameter bindings using the scope of calling procedure
-		int numP = paramlist.numParams(), numE = explist.numExpressions();
+		// add parameter bindings
+		int numP = paramlist.numParams(), numE = elems.size();
 		if (numP != numE)
 			throw new RuntimeException("Param count does not match, expected " +
 					numP + ", received " + numE);
 		HashMap<String, Elem> paramBindings = new HashMap<>();
 		Iterator<String> p = paramlist.getParamList().iterator();
-		Iterator<Expr> e = explist.getExpressions().iterator();
+		Iterator<Elem> e = elems.iterator();
 		while (p.hasNext() && e.hasNext())
-			paramBindings.put(p.next(), e.next().eval(symbolTable));
+			paramBindings.put(p.next(), e.next());
 		procEnv.putAll(paramBindings);
 		
 		// finally, evaluate body
@@ -744,6 +758,10 @@ class Proc extends Expr implements Scope {
 	public String toString() {
 		return "proc " + paramlist + " " + stmtlist + " end";
 	}
+	
+	public int numParams() {
+		return paramlist.numParams();
+	}
 }
 
 class ProcP extends Expr {
@@ -769,6 +787,62 @@ class ProcP extends Expr {
 	@Override
 	public String toString() {
 		return "procp(" + exp + ")";
+	}
+}
+
+class Map extends Expr {
+
+	private Expr proc;
+	private Expr list;
+	
+	public Map(Expr proc, Expr list) {
+		this.proc = proc;
+		this.list = list;
+	}
+
+	@Override
+	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		// evaluate proc expression
+		Elem procElem = proc.eval(symbolTable);
+		if (!procElem.isProc()) {
+			throw new RuntimeException("map expected a proc as first argument," +
+					" given: " + procElem.type());
+		}
+		Proc proc = procElem.getProc();
+		if (proc.numParams() != 1) {
+			throw new RuntimeException("cannot call map with proc that does " +
+					"not expect exactly 1 parameter; received: " + proc);
+		}
+		
+		// evaluate list expression and construct expressions
+		Elem listElem = list.eval(symbolTable);
+		if (!listElem.isList()) {
+			throw new RuntimeException("map expected a list as second " +
+					"argument, given: " + listElem.type());
+		}
+		List<Elem> elems = listElem.getList();
+		
+		// map
+		LinkedList<Elem> res = new LinkedList<>();
+		LinkedList<Elem> singleton;
+		for (Elem e: elems) {
+			singleton = new LinkedList<>();
+			singleton.add(e);
+			res.add(proc.apply(symbolTable, singleton));
+		}
+		return new Elem(res);
+	}
+	
+	@Override
+	public void setStaticScope(Scope scope) {
+		this.scope = scope;
+		proc.setStaticScope(scope);
+		list.setStaticScope(scope);
+	}
+
+	@Override
+	public String toString() {
+		return "map(" + proc + ", " + list + ")";
 	}
 }
 
@@ -976,7 +1050,7 @@ class ParamList {
 
 class ExpressionList {
 
-	private LinkedList<Expr> list;
+	private List<Expr> list;
 
 	public ExpressionList(Expr ex) {
 		list = new LinkedList<Expr>();
@@ -987,6 +1061,10 @@ class ExpressionList {
 		list = new LinkedList<Expr>();
 		list.add(ex);
 		list.addAll(el.getExpressions());
+	}
+	
+	public ExpressionList(List<Expr> list) {
+		this.list = list;
 	}
 
 	public List<Expr> getExpressions() {
