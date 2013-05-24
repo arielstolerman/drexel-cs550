@@ -1,0 +1,136 @@
+Drexel CS550
+Assignment 6
+############
+Group 1:
+- Ariel Stolerman
+- Bekah Overdorf
+- Sam Snodgrass
+
+
+### summary ###
+
+Extension of the mini-language (that supports lists) to treat procedures as
+expressions.
+
+### IMPORTANT NOTES ###
+
+In our grammar, the return statement is defined as:
+RETURN <expr>
+and not:
+RETURN ASSIGNOP <expr>
+
+### Files and Descriptions ###
+
+--- General ---
+
+> Makefile
+The Makefile utility file for viewing, building and running the code.
+
+> java-cup-11a.jar
+Java CUP library
+
+> jflex-1.4.3.jar
+Java JFlex library
+
+> interpretertext.cup
+The CUP grammar definition input file, produces parser.java and sym.java.
+Defines the parser grammar. Added grammar:
+- added tokens for supporting lists and list operations (LBRACKET, CONS, etc.)
+- added grammar derivation rules that define lists as a type of expressions
+
+> interpretertext.flex
+The JFlex tokenizer input file, produces Yylex.java.
+Defines the new tokens (mentioned partially above) to support lists and their
+operations.
+
+> listlen_iter.p, listlen_rec.p
+Implementations in mini-language code of functions that return length of lists
+in an iterative / recursive calculation.
+The files include also some test cases that call the functions.
+
+--- Part 1 ---
+
+> part1/Part1.java
+Includes all classes for the mini-language parser AST construction and runtime
+evaluation functionality. Lists and list operations support was added through
+the respective classes, with Java-based lists to hold the unparsed expressions
+and parsed elements.
+Important classes:
+- Element: an object that holds either an integer value or a list. Any
+  expression is evaluated to an Element.
+- Lst, Concat, Cons, Car, Cdr, NullP, IntP, ListP: classes for lists and list
+  operations parsing and evaluation.
+
+--- Part 2 ---
+
+> part2/Part2.java
+Similar to Part1.java, only complies with the dynamic memory allocation scheme
+defined by Heap.java (next). The program's heap is defined under class Program
+(as a static object), initialized to 128 cons elements.
+The basic elements are of class Elem, defined in Heap.java.
+
+> part2/Heap.java
+Implementation of a dynamic memory heap with mark-and-sweep GC.
+The basic elements are of class Elem, which in contrast to Element from part1,
+represent elements (containing integers or lists) with their "next" object as
+an index of that object on the heap.
+Elem also provides functionality to create objects NOT on the heap, for "local"
+(i.e. mini-language "stack" memory) elements (either local ints or local pointers
+to lists on the heap).
+
+
+### Build instructions ###
+
+> make view-part1
+Displays all the source files (including cup and flex input files) for part1.
+
+> make
+Builds the entire project, both part1 and part2 (defined by the 'build' label).
+
+> make run-part1
+Runs the parser for part1.
+
+> make view-func1
+Prints the mini-language implementation of the iterative list-length function.
+
+> make view-func2
+Prints the mini-language implementation of the recursive list-length function.
+
+> make view-part2
+Displays all the source files (including cup and flex input files) for part2.
+The cup and flex files do not differ from part1.
+
+> make run-part2
+Runs the parser for part2.
+
+> make clean
+Cleans all temporary fies generated during the build process.
+
+
+### Test ###
+
+> test/
+This directory contains (some of the) test cases with which we tested our project.
+Test files:
+- bad_car.p
+- bad_cdr.p
+- bad_concat.p
+- bad_cons1.p
+- bad_cons2.p
+- bad_if.p
+- bad_minus.p
+- bad_plus.p
+- bad_repeat.p
+- bad_times.p
+- bad_while.p
+- good_arith.p
+- good_cons.p
+- good_list_arith.p
+- good_queries.p
+- good_repeat.p
+- good_while.p
+
+> test.csh
+An executable that runs part1 and part2 on all the test cases under test/ and
+outputs the results.
+In order to run, first chmod +x test.csh
