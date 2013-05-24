@@ -35,79 +35,68 @@ Java JFlex library
 > interpretertext.cup
 The CUP grammar definition input file, produces parser.java and sym.java.
 Defines the parser grammar. Added / modified grammar:
-- added token for checking if an expression is a procedure (PROCP)
+- added token for checking if an expression is a procedure and map (PROCP, MAP)
 - modified define_statement to be a syntactic sugar for assign_statement (since
   now procs are expressions, so there is no difference)
-- added derivation of factor to proc (sort of a lambda expression)
-- 
-
-- added tokens for supporting lists and list operations (LBRACKET, CONS, etc.)
-- added grammar derivation rules that define lists as a type of expressions
+- added derivation of factor to:
+  * proc - as procedures are now expressions (sort of a lambda expression)
+  * procp - predicate to check if an expression is a proc (returns 1 if it is,
+    0 if not)
+  * map - similar to scheme's map, returns a list of values returned by applying
+    the proc on the expressions in the given list
 
 > interpretertext.flex
 The JFlex tokenizer input file, produces Yylex.java.
-Defines the new tokens (mentioned partially above) to support lists and their
-operations.
+Defines the new tokens PROCP and MAP to support the operations mentioned above.
 
-> listlen_iter.p, listlen_rec.p
-Implementations in mini-language code of functions that return length of lists
-in an iterative / recursive calculation.
-The files include also some test cases that call the functions.
-
---- Part 1 ---
-
-> part1/Part1.java
+> Program.java
 Includes all classes for the mini-language parser AST construction and runtime
-evaluation functionality. Lists and list operations support was added through
-the respective classes, with Java-based lists to hold the unparsed expressions
-and parsed elements.
-Important classes:
-- Element: an object that holds either an integer value or a list. Any
-  expression is evaluated to an Element.
-- Lst, Concat, Cons, Car, Cdr, NullP, IntP, ListP: classes for lists and list
-  operations parsing and evaluation.
-
---- Part 2 ---
-
-> part2/Part2.java
-Similar to Part1.java, only complies with the dynamic memory allocation scheme
-defined by Heap.java (next). The program's heap is defined under class Program
-(as a static object), initialized to 128 cons elements.
-The basic elements are of class Elem, defined in Heap.java.
-
-> part2/Heap.java
-Implementation of a dynamic memory heap with mark-and-sweep GC.
-The basic elements are of class Elem, which in contrast to Element from part1,
-represent elements (containing integers or lists) with their "next" object as
-an index of that object on the heap.
-Elem also provides functionality to create objects NOT on the heap, for "local"
-(i.e. mini-language "stack" memory) elements (either local ints or local pointers
-to lists on the heap).
+evaluation functionality.
+Like in assignment 2, Lists and list operations support was added.
+Proc is changed to extend Expr, and the old function table is removed; all
+variables (which can be integers, lists or procs) are stored in the same symbol
+table.
+Important classes and functionality:
+- Elem: an object that holds an integer value, a list or a proc. Any
+  expression is evaluated to an Elem (statements are also evaluated to return
+  Elem, but return null)
+- ElemType: an enumerator that defines the possible Elem types - number, list
+  or proc
+- Component: an abstract class that all other classes extend, added to enforce:
+  * having a Scope: the scope in which the object is defined / called; this is
+    used to propagate to procedures the environment (scope) in which they are
+    defined, if static scoping is used
+  * eval method - that accepts the symbol table of the enclosing scope
+  * setStaticScope method - to set the static scope. Every component sets its
+    scope to the given one, and propagates it down to its components, except
+    procs: procs propagate down THEMSELVES as they are the new scope to
+    transfer further down
+- Scope: an interface implemented ONLY by Program and Proc - to allow them be
+  defined as possible scopes, i.e. static environments for the objects that are
+  defined within them
+- ReturnValue: extends RuntimeException, used to throw a proc's return value
+  from a return statement up to the apply
+- Proc: similar to before, only now extends Expr
+- ProcP: a predicate to check if an expression is a proc, as mentioned above
+- Map: a map of a list using a proc, similar to scheme, as mentioned above
 
 
 ### Build instructions ###
 
-> make view-part1
-Displays all the source files (including cup and flex input files) for part1.
+> make view
+Displays all the source files (including cup and flex input files).
 
-> make
-Builds the entire project, both part1 and part2 (defined by the 'build' label).
+> make compile-static, make compile-dynamic, make compile
+Create the classes and builds the parser. There is no difference between static
+and dynamic build, as that is determined by a command-line argument on run.
+A static boolean flag Program.STATIC_SCOPING is set accordingly (default to
+static) which determines the scoping rule - static or dynamic.
 
-> make run-part1
-Runs the parser for part1.
+> make run-static
+Runs the parser using static scoping.
 
-> make view-func1
-Prints the mini-language implementation of the iterative list-length function.
-
-> make view-func2
-Prints the mini-language implementation of the recursive list-length function.
-
-> make view-part2
-Displays all the source files (including cup and flex input files) for part2.
-The cup and flex files do not differ from part1.
-
-> make run-part2
-Runs the parser for part2.
+> make run-dynamic
+Runs the parser using dynamic scoping.
 
 > make clean
 Cleans all temporary fies generated during the build process.
@@ -116,7 +105,8 @@ Cleans all temporary fies generated during the build process.
 ### Test ###
 
 > test/
-This directory contains (some of the) test cases with which we tested our project.
+This directory contains test cases with which we tested our project.
+The files that test the new functionality of Proc, ProcP and Map are marked (*).
 Test files:
 - bad_car.p
 - bad_cdr.p
@@ -124,19 +114,31 @@ Test files:
 - bad_cons1.p
 - bad_cons2.p
 - bad_if.p
+- bad_map.p						(*)
 - bad_minus.p
 - bad_plus.p
+- bad_proc1.p					(*)
+- bad_proc2.p					(*)
+- bad_proc_only_in_dynamic.p	(*)
 - bad_repeat.p
 - bad_times.p
 - bad_while.p
 - good_arith.p
 - good_cons.p
 - good_list_arith.p
-- good_queries.p
+- good_listlen_iter.p
+- good_listlen_rec.p
+- good_map.p					(*)
+- good_proc_as_arg.p			(*)
+- good_proc_as_return.p			(*)
+- good_proc_nested.p			(*)
+- good_proc.p					(*)
+- good_proc_stat_vs_dyn.p		(*)
+- good_queries.p				(*) includes procp tests
 - good_repeat.p
 - good_while.p
 
 > test.csh
-An executable that runs part1 and part2 on all the test cases under test/ and
-outputs the results.
+An executable that runs the code on all the test cases under test/ in both
+static and dynamic mode and outputs the results.
 In order to run, first chmod +x test.csh
