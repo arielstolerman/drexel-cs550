@@ -7,14 +7,12 @@
  * --------------------------------------------------------
  *
  * Group 1 Extension:
- * added support for lists of integers and other such lists
+ * added support for lists, procs as expressions and classes (with inheritance)
  */
 
 import java_cup.runtime.*;
 import java.util.*;
 import java.io.*;
-
-
 
 parser code {:
 	
@@ -58,98 +56,107 @@ terminal CONCAT, LBRACKET, RBRACKET;
 terminal IF, THEN, ELSE, FI, WHILE, DO, OD, REPEAT, UNTIL;
 terminal DEFINE, PROC, PROCP, MAP, END, RETURN;
 terminal CONS, CAR, CDR, NULLP, INTP, LISTP;
+terminal CLASS, DOT;
 terminal Integer NUMBER;
 terminal COMMA;
 terminal String ID;
 
 non terminal Program program;
-non terminal StatementList statement_list;
+non terminal StatementList stmt_list;
 non terminal ParamList param_list;
 non terminal ExpressionList expr_list;
-non terminal Statement statement, assign_statement, if_statement, while_statement;
-non terminal Statement repeat_statement, define_statement, return_statement;
-non terminal Expr expr, term, factor, proc, funcall, list, map;
+non terminal Statement stmt, assign_stmt, if_stmt, while_stmt, repeat_stmt;
+non terminal Statement define_stmt, return_stmt, class_stmt, expr_stmt;
+non terminal Expr expr, term, factor, proc, funcall, list, map, dotcall;
 
 /* program */
 program ::=
-	statement_list:list
+	stmt_list:list
 	{:
 		Program program = new Program(list);
 		program.eval();
 		program.dump();
 	:};
 
-/* statements */
-statement_list ::=
-	statement:s
+/* stmts */
+stmt_list ::=
+	stmt:s
 	{:
 		RESULT = new StatementList(s);
 	:} |
-	statement:s SEMI statement_list:sl 
+	stmt:s SEMI stmt_list:sl 
 	{:
-		/* insert a new statement at the end of the existing statement list */
+		/* insert a new stmt at the end of the existing stmt list */
 		sl.insert(s); RESULT = sl;
 	:};
 
-statement ::=
-	assign_statement:a
+stmt ::=
+	assign_stmt:a
 	{:
 		RESULT = a;
 	:} |
-	define_statement:d
+	define_stmt:d
 	{:
 		RESULT = d;
 	:} |
-	if_statement:i
+	if_stmt:i
 	{:
 		RESULT = i;
 	:} |
-	while_statement:w
+	while_stmt:w
 	{:
 		RESULT = w;
 	:} |
-	return_statement:rs
+	return_stmt:rs
 	{:
 		RESULT = rs;
 	:} |
-	repeat_statement:r
+	repeat_stmt:r
 	{:
 		RESULT = r;
+	:} |
+	class_stmt:c
+	{:
+		RESULT = c;
+	:} |
+	expr_stmt:e
+	{:
+		RESULT = e;
 	:};
 
-assign_statement ::=
+assign_stmt ::=
 	ID:i ASSIGN expr:e
 	{:
 		RESULT = new AssignStatement(i,e); 
 	:};
 
-define_statement ::=
+define_stmt ::=
 	DEFINE ID:i expr:e
 	{:
-		// syntactic sugar for assign statement, since now procedures are exps
+		// syntactic sugar for assign stmt, since now procedures are exps
 		RESULT = new AssignStatement(i,e);
 		//RESULT = new DefineStatement(i,new Proc(pl,sl));
 	:};
 
-if_statement ::=
-	IF expr:e THEN statement_list:s1 ELSE statement_list:s2 FI
+if_stmt ::=
+	IF expr:e THEN stmt_list:s1 ELSE stmt_list:s2 FI
 	{:
 		RESULT = new IfStatement(e,s1,s2);
 	:};
 
-while_statement ::=
-	WHILE expr:e DO statement_list:s OD
+while_stmt ::=
+	WHILE expr:e DO stmt_list:s OD
 	{:
 		RESULT = new WhileStatement(e,s);
 	:};
 
-repeat_statement ::=
-	REPEAT statement_list:sl UNTIL expr:e
+repeat_stmt ::=
+	REPEAT stmt_list:sl UNTIL expr:e
 	{:
 		RESULT = new RepeatStatement(sl,e);
 	:};
 
-return_statement ::=
+return_stmt ::=
 	RETURN expr:e
 	{:
 		RESULT = new ReturnStatement(e);
@@ -163,6 +170,30 @@ param_list ::=
 	ID:i
 	{:
 		RESULT = new ParamList(i);
+	:};
+
+class_stmt ::=
+	CLASS ID:i LPAREN param_list:pl RPAREN COLON ID:s stmt_list:sl END
+	{:
+		RESULT = new Class(i, s, pl, sl);
+	:} |
+	CLASS ID:i LPAREN RPAREN COLON ID:s stmt_list:sl END
+	{:
+		RESULT = new Class(i, s, sl);
+	:} |
+	CLASS ID:i LPAREN param_list:pl RPAREN stmt_list:sl END
+	{:
+		RESULT = new Class(i, pl, sl);
+	:} |
+	CLASS ID:i LPAREN RPAREN stmt_list:sl END
+	{:
+		RESULT = new Class(i, sl);
+	:};
+
+expr_stmt ::=
+	expr:e
+	{:
+		RESULT = e;
 	:};
 
 /* expressions */
@@ -251,10 +282,14 @@ factor ::=
 	list:l
 	{:
 		RESULT = l;
+	:} |
+	dotcall:d
+	{:
+		RESULT = d;
 	:};
 
 proc ::=
-	PROC LPAREN param_list:pl RPAREN statement_list:sl END
+	PROC LPAREN param_list:pl RPAREN stmt_list:sl END
 	{:
 		RESULT = new Proc(pl,sl);
 	:};
@@ -291,3 +326,12 @@ expr_list ::=
 		RESULT = new ExpressionList(ex);
 	:};
 
+dotcall ::=
+	ID:i DOT funcall:f
+	{:
+		RESULT = new DotCall(i,f);
+	:} |
+	ID:i DOT ID:a
+	{:
+		RESULT = new DotCall(i,a);
+	:};

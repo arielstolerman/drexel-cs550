@@ -1020,6 +1020,28 @@ class RepeatStatement extends Statement {
 	}
 }
 
+class Class extends Component {
+
+	@Override
+	public void setStaticScope(Scope scope) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+}
+
 class ParamList {
 
 	private List<String> paramlist;
