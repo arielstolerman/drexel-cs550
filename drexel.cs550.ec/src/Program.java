@@ -846,6 +846,42 @@ class Map extends Expr {
 	}
 }
 
+class DotCall extends Expr {
+	
+	private String name;
+	private String attrib;
+	private FunctionCall funCall;
+	
+	public DotCall(String n, String a) {
+		name = n;
+		attrib = a;
+	}
+	
+	public DotCall(String n, FunctionCall f) {
+		name = n;
+		funCall = f;
+	}
+
+	@Override
+	public void setStaticScope(Scope scope) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+}
+
 // =============================================================================
 
 // statements
@@ -1020,8 +1056,32 @@ class RepeatStatement extends Statement {
 	}
 }
 
-class Class extends Component {
-
+class Class extends Statement implements Scope {
+	
+	private String name;
+	private String superName;
+	private ParamList paramList;
+	private StatementList stmtList;
+	
+	public Class(String n, String s, ParamList pl, StatementList sl) {
+		name = n;
+		superName = s;
+		paramList = pl;
+		stmtList = sl;
+	}
+	
+	public Class(String n, ParamList pl, StatementList sl) {
+		this(n, null, pl, sl);
+	}
+	
+	public Class(String n, String s, StatementList sl) {
+		this(n, s, new ParamList(), sl);
+	}
+	
+	public Class(String n, StatementList sl) {
+		this(n, null, new ParamList(), sl);
+	}
+	
 	@Override
 	public void setStaticScope(Scope scope) {
 		// TODO Auto-generated method stub
@@ -1039,20 +1099,30 @@ class Class extends Component {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public HashMap<String, Elem> env() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 }
 
 class ParamList {
 
 	private List<String> paramlist;
+	
+	public ParamList() {
+		paramlist = new LinkedList<>();
+	}
 
 	public ParamList(String name) {
-		paramlist = new LinkedList<String>();
+		this();
 		paramlist.add(name);
 	}
 
 	public ParamList(String name, ParamList parlist) {
-		paramlist = parlist.getParamList();
+		this();
 		paramlist.add(0,name);
 	}
 
