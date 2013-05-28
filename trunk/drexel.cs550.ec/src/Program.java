@@ -14,7 +14,8 @@ import java.util.*;
 // added code
 
 /**
- * Generic element that can be one of: integer, list or procedure.
+ * Generic element that can be one of: integer, list, procedure or class
+ * instance.
  */
 class Elem {
 	
@@ -22,11 +23,12 @@ class Elem {
 	private Integer num = null;
 	private List<Elem> list = null;
 	private Proc proc = null;
+	private Class cls = null;
 	private ElemType type = ElemType.ERROR;
 	
 	// constructors
 	
-	private Elem(Integer num, List<Elem> list, Proc proc) {
+	private Elem(Integer num, List<Elem> list, Proc proc, Class cls) {
 		if (num != null) {
 			this.num = num;
 			type = ElemType.NUM;
@@ -39,18 +41,26 @@ class Elem {
 			this.proc = proc;
 			type = ElemType.PROC;
 		}
+		else if (cls != null) {
+			this.cls = cls;
+			type = ElemType.CLASS;
+		}
 	}
 	
 	public Elem(Integer num) {
-		this(num, null, null);
+		this(num, null, null, null);
 	}
 	
 	public Elem(List<Elem> list) {
-		this(null, list, null);
+		this(null, list, null, null);
 	}
 	
 	public Elem(Proc proc) {
-		this(null, null, proc);
+		this(null, null, proc, null);
+	}
+	
+	public Elem(Class cls) {
+		this(null, null, null, cls);
 	}
 	
 	// getters and queries
@@ -65,6 +75,10 @@ class Elem {
 	
 	public boolean isProc() {
 		return type == ElemType.PROC;
+	}
+	
+	public boolean isClass() {
+		return type == ElemType.CLASS;
 	}
 	
 	public ElemType type() {
@@ -82,6 +96,10 @@ class Elem {
 	public Proc getProc() {
 		return proc;
 	}
+	
+	public Class getCls() {
+		return cls;
+	}
 
 	@Override
 	public String toString() {
@@ -89,6 +107,7 @@ class Elem {
 		case NUM: return num.toString();
 		case LIST: return list.toString();
 		case PROC: return proc.toString();
+		case CLASS: return cls.toString();
 		default: return "Elem error";
 		}
 	}
@@ -101,6 +120,7 @@ enum ElemType {
 	NUM("integer"),
 	LIST("list"),
 	PROC("procedure"),
+	CLASS("class"),
 	ERROR("error");
 	
 	private ElemType(String desc) {
@@ -146,7 +166,7 @@ abstract class Component {
 	public abstract Elem eval(HashMap<String, Elem> symbolTable)
 			throws RuntimeException;
 	
-	// strign representation
+	// string representation
 	
 	@Override
 	public abstract String toString();
@@ -433,6 +453,14 @@ class FunctionCall extends Expr {
 	@Override
 	public String toString() {
 		return "" + funcid + explist;
+	}
+	
+	public String funcId() {
+		return funcid;
+	}
+	
+	public ExpressionList exprList() {
+		return explist;
 	}
 }
 
@@ -848,36 +876,63 @@ class Map extends Expr {
 
 class DotCall extends Expr {
 	
-	private String name;
-	private String attrib;
-	private FunctionCall funCall;
+	private Expr expr;
+	private String attrib = null;
+	private FunctionCall funCall = null;
 	
-	public DotCall(String n, String a) {
-		name = n;
+	public DotCall(Expr e, String a) {
+		expr = e;
 		attrib = a;
 	}
 	
-	public DotCall(String n, FunctionCall f) {
-		name = n;
+	public DotCall(Expr e, FunctionCall f) {
+		expr = e;
 		funCall = f;
 	}
 
 	@Override
 	public void setStaticScope(Scope scope) {
-		// TODO Auto-generated method stub
-		
+		this.scope = scope;
+		if (funCall != null)
+			funCall.setStaticScope(scope);
 	}
 
 	@Override
 	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
-		// TODO Auto-generated method stub
-		return null;
+		// get instance
+		Elem clsElem = expr.eval(symbolTable);
+		if (!clsElem.isClass())
+			throw new RuntimeException("Not a class instance: " + expr);
+		Class cls = clsElem.getCls();
+		
+		// get attribute / call function
+		Elem res = null;
+		if (attrib != null) {
+			res = cls.env().get(attrib);
+			if (res == null) {
+				throw new RuntimeException(expr + " does not contain attribute "
+						+ attrib);
+			}
+		}
+		else if (funCall != null) {
+			String funcid = funCall.funcId();
+			Elem proc = cls.env().get(funcid);
+			if (proc == null)
+				throw new RuntimeException(expr + " does not contain function "
+						+ funcid);
+			res = funCall.eval(symbolTable); // should work in static scoping
+		}
+		
+		// handle return
+		if (res == null)
+			throw new RuntimeException("unexpected return value from " +
+					toString());
+		return res;
 	}
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
-		return null;
+		return expr + "." + (attrib != null ? attrib : funCall);
 	}
 	
 }
@@ -1062,6 +1117,7 @@ class Class extends Statement implements Scope {
 	private String superName;
 	private ParamList paramList;
 	private StatementList stmtList;
+	private HashMap<String, Elem> clsEnv = new HashMap<>();
 	
 	public Class(String n, String s, ParamList pl, StatementList sl) {
 		name = n;
@@ -1084,28 +1140,29 @@ class Class extends Statement implements Scope {
 	
 	@Override
 	public void setStaticScope(Scope scope) {
-		// TODO Auto-generated method stub
-		
+		this.scope = scope;
+		stmtList.setStaticScope(this);
 	}
 
 	@Override
 	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
-		// TODO Auto-generated method stub
+		
+		
+		
 		return null;
 	}
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
-		return null;
+		return "class " + name + " " + paramList + " " +
+				(superName != null ? ": " + superName + " " : "") +
+				stmtList + " end";
 	}
 
 	@Override
 	public HashMap<String, Elem> env() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
+		return clsEnv;
+	}	
 }
 
 class ParamList {

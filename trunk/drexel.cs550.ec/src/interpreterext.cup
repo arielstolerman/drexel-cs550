@@ -327,11 +327,11 @@ expr_list ::=
 	:};
 
 dotcall ::=
-	ID:i DOT funcall:f
+	expr:e DOT funcall:f
 	{:
-		RESULT = new DotCall(i,f);
+		RESULT = new DotCall(e,f);
 	:} |
-	ID:i DOT ID:a
+	expr:e DOT ID:a
 	{:
-		RESULT = new DotCall(i,a);
+		RESULT = new DotCall(e,a);
 	:};
