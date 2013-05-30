@@ -121,7 +121,7 @@ stmt ::=
 	:} |
 	expr_stmt:e
 	{:
-		RESULT = e;
+		RESULT = new ExprStatement(e);
 	:};
 
 assign_stmt ::=

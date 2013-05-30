@@ -1111,6 +1111,35 @@ class RepeatStatement extends Statement {
 	}
 }
 
+class ExprStatement extends Statement {
+
+	// fields
+	private Expr expr;
+	
+	// constructor
+	public ExprStatement(Expr expr) {
+		this.expr = expr;
+	}
+	
+	@Override
+	public void setStaticScope(Scope scope) {
+		this.scope = scope;
+		expr.setStaticScope(scope);
+	}
+
+	@Override
+	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		// evaluate the expression but return nothing
+		expr.eval(symbolTable);
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		return expr.toString();
+	}
+}
+
 class Class extends Statement implements Scope {
 	
 	private String name;
