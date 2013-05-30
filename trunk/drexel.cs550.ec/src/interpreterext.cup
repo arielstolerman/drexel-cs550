@@ -56,7 +56,7 @@ terminal CONCAT, LBRACKET, RBRACKET;
 terminal IF, THEN, ELSE, FI, WHILE, DO, OD, REPEAT, UNTIL;
 terminal DEFINE, PROC, PROCP, MAP, END, RETURN;
 terminal CONS, CAR, CDR, NULLP, INTP, LISTP;
-terminal CLASS, DOT;
+terminal CLASS, COLON, DOT;
 terminal Integer NUMBER;
 terminal COMMA;
 terminal String ID;
