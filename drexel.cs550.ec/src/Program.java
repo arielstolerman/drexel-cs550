@@ -1175,7 +1175,27 @@ class Class extends Statement implements Scope {
 
 	@Override
 	public Elem eval(HashMap<String, Elem> symbolTable) throws RuntimeException {
+		// create the class constructor procedure and add it to the symbol table
 		
+		// check for super
+		if (superName != null) {
+			// get super
+			Elem superProcElem;
+			if ((superProcElem = symbolTable.get(superName)) == null) {
+				throw new RuntimeException("super class " + superName +
+						" undefined");
+			}
+			Proc superProc = superProcElem.getProc();
+			// generate super parameters
+			int numSuperParams = superProc.numParams();
+			if (paramList.numParams() < numSuperParams) {
+				throw new RuntimeException("not enough parameters passed to " +
+						name + " to pass to the super constructor " + superName);
+			}
+			
+		}
+		
+		Proc constructor = new Proc(paramList, stmtList);
 		
 		
 		return null;
