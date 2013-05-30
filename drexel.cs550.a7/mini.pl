@@ -4,10 +4,9 @@
 % --------
 % Group 1 extension
 
+% =============================================================================
 % Test cases:
-%
-%	reduce_all(times(plus(2,3),minus(5,1)),V).
-%	V = 20 ?
+% =============================================================================
 %
 %	reduce_all(config(times(plus(x,3),minus(5,y)),[value(x,2),value(y,1)]),V).
 %	V = config(20,[value(x,2),value(y,1)]) ? 
@@ -42,15 +41,24 @@
 %	Env = [value(n,-3),value(i,0),value(fact,6)]
 %
 
+
 % Env lookup
 
 lookup([value(I,V)|_],I,V).
 lookup([_|Es],I,V) :- lookup(Es,I,V), !.
 
-% (1) '0' => 0,..., '9' => 9
-% (2) V'0' => 10*V,...,V'9' => 10*V+9
+% =============================================================================
+% Added code
+% =============================================================================
 
-reduce_all(config(V,Env),config(V,Env)) :- integer(V), !.
+% Env update
+
+update([],value(I,V),[value(I,V)]).
+update([value(I,_)|Env], value(I,V), [value(I,V)|Env]).
+update([value(J,V1)|Env], value(I,V2), [value(J,V1)|Env1]) :-
+	update(Env, value(I,V2), Env1).
+
+% =============================================================================
 
 % (3) V1 '+' V2 => V1 + V2
 
@@ -110,13 +118,6 @@ reduce(config(times(V,E),Env),config(times(V,E1),Env)) :-
 
 % rule (13) is missing
 
-% (14)     <E | Env> => <E1 | Env>, <E1 | Env> => <E2 | Env>	[transitive closure]
-% 		-----------------------------------------------------
-% 					<E | Env> => <E2 | Env>
-
-reduce_all(config(E,Env),config(E2,Env)) :- 
-	reduce(config(E,Env),config(E1,Env)), reduce_all(config(E1,Env),config(E2,Env)).
-
 % (15)		  Env(I) = V
 % 		----------------------
 % 		<I | Env> => <V | Env>
@@ -130,7 +131,8 @@ reduce(config(I,Env),config(V,Env)) :- atom(I), lookup(Env,I,V).
 
 % (16)	<I ':=' V | Env> => Env & {I = V}
 
-lookup(Env,I,V) :- atom(I), integer(V), config(assign(I,V),Env).								% ?????
+reduce(config(assign(I,E),Env),Env1) :-
+	atom(I), reduce_value(config(E,Env),V), !, update(Env, value(I,V), Env1).
 
 % (17)		   <E | Env> => <E1 | Env> 
 % 		-------------------------------------
@@ -162,29 +164,43 @@ reduce(config(if(E,L1,L2),Env),config(if(E1,L1,L2),Env)) :-
 % 		<'if' V 'then' L1 'else' L2 'fi' | Env> => <L1 | Env>
 
 reduce(config(gtzero(V),Env),config(R,Env)) :- integer(V), !, R is (V > 0).						% ?????
-reduce(config(if(V,L1,L2),Env),config(L1,Env)) :- integer(V), gtzero(V).
+reduce(config(if(V,L1,L2),Env),config(L1,Env)) :- gtzero(V), seq(L1), seq(L2).
  
 % (22)						  V => 0
 % 		-----------------------------------------------------
 % 		<'if' V 'then' L1 'else' L2 'fi' | Env> => <L2 | Env>
 
 reduce(config(iszero(V),Env),config(R,Env)) :- integer(V), !, R is (V == 0).					% ?????
-reduce(config(if(V,L1,L2),Env),config(L2,Env)) :- integer(V), iszero(V).
+reduce(config(if(V,L1,L2),Env),config(L2,Env)) :- iszero(V), seq(L1), seq(L2).
  
 % (23)		<E | Env> => <V | Env>, V => 0
 % 		------------------------------------
 % 		<'while' E 'do' L 'od' | Env> => Env
 
 reduce(config(while(E,L),Env),Env) :-															% ?????
-	reduce(config(E,Env),config(V,Env)), iszero(V).
+	reduce(config(E,Env),config(V,Env)), iszero(V), seq(L).
  
 % (24)						<E | Env> => <V| Env>, V > 0
 % 		-----------------------------------------------------------------
 % 		<'while' E 'do' L 'od' | Env> => <L; 'while' E 'do' L 'od' | Env>
 
 reduce(config(while(E,L),Env),config(seq(L,while(E,L)),Env)) :-									% ?????
-	reduce(config(E,Env),config(V,Env)), gtzero(V).
+	reduce_value(config(E,Env),V), gtzero(V).
+
 
 % =============================================================================
+
+
+% (1) '0' => 0,..., '9' => 9
+% (2) V'0' => 10*V,...,V'9' => 10*V+9
+
+reduce_all(config(V,Env),config(V,Env)) :- integer(V), !.
+
+% (14)     <E | Env> => <E1 | Env>, <E1 | Env> => <E2 | Env>	[transitive closure]
+% 		-----------------------------------------------------
+% 					<E | Env> => <E2 | Env>
+
+reduce_all(config(E,Env),config(E2,Env)) :- 
+	reduce(config(E,Env),config(E1,Env)), reduce_all(config(E1,Env),config(E2,Env)).
 
 reduce_value(config(E,Env),V) :- reduce_all(config(E,Env),config(V,Env)).
