@@ -146,11 +146,11 @@ reduce(config(assign(I,E),Env),config(assign(I,E1),Env)) :-
 % 		<S ';' L | Env> => <L | Env1> 
 
 reduce(config(seq(S,L),Env),config(L,Env1)) :-
-	reduce(config(S,Env),Env1).
+	reduce(config(S,Env),Env1), seq(L).
  
 % (19)	L => <L | Env0>
 
-reduce(L,config(L,Env0)) :- seq(L).																% ?????
+reduce(L,config(L,[])). %										 :- seq(L).						% ?????
  
 % (20)								<E | Env> => <E1| Env>
 % 		-----------------------------------------------------------------------------------
@@ -192,13 +192,14 @@ reduce(config(while(E,L),Env),config(seq(L,while(E,L)),Env)) :-									% ?????
 
 
 % (1) '0' => 0,..., '9' => 9
+%
 % (2) V'0' => 10*V,...,V'9' => 10*V+9
-
-reduce_all(config(V,Env),config(V,Env)) :- integer(V), !.
-
+%
 % (14)     <E | Env> => <E1 | Env>, <E1 | Env> => <E2 | Env>	[transitive closure]
 % 		-----------------------------------------------------
 % 					<E | Env> => <E2 | Env>
+
+reduce_all(config(V,Env),config(V,Env)) :- integer(V), !.
 
 reduce_all(config(E,Env),config(E2,Env)) :- 
 	reduce(config(E,Env),config(E1,Env)), reduce_all(config(E1,Env),config(E2,Env)).
