@@ -129,24 +129,26 @@ reduce(config(I,Env),config(V,Env)) :- atom(I), lookup(Env,I,V).
 % =============================================================================
 
 % (16)	<I ':=' V | Env> => Env & {I = V}
-% ?????????????????????????????????????????????????????????????????????????????
-lookup(Env,I,V) :- config(assign(I,V),Env)
+
+lookup(Env,I,V) :- atom(I), integer(V), config(assign(I,V),Env).								% ?????
 
 % (17)		   <E | Env> => <E1 | Env> 
 % 		-------------------------------------
 % 		<I ':=' E | Env> => <I ':=' E1 | Env> 
 
-
+reduce(config(assign(I,E),Env),config(assign(I,E1),Env)) :-
+	reduce(config(E,Env),config(E1,Env)).
  
 % (18)		  <S | Env> => Env1
 % 		-----------------------------
 % 		<S ';' L | Env> => <L | Env1> 
 
-
+reduce(config(seq(S,L),Env),config(L,Env1)) :-
+	reduce(config(S,Env),Env1).
  
 % (19)	L => <L | Env0>
 
-
+reduce(L,config(L,Env0)) :- seq(L).																% ?????
  
 % (20)								<E | Env> => <E1| Env>
 % 		-----------------------------------------------------------------------------------
@@ -159,24 +161,29 @@ reduce(config(if(E,L1,L2),Env),config(if(E1,L1,L2),Env)) :-
 % 		-----------------------------------------------------
 % 		<'if' V 'then' L1 'else' L2 'fi' | Env> => <L1 | Env>
 
-
+reduce(config(gtzero(V),Env),config(R,Env)) :- integer(V), !, R is (V > 0).						% ?????
+reduce(config(if(V,L1,L2),Env),config(L1,Env)) :- integer(V), gtzero(V).
  
 % (22)						  V => 0
 % 		-----------------------------------------------------
 % 		<'if' V 'then' L1 'else' L2 'fi' | Env> => <L2 | Env>
 
-
+reduce(config(iszero(V),Env),config(R,Env)) :- integer(V), !, R is (V == 0).					% ?????
+reduce(config(if(V,L1,L2),Env),config(L2,Env)) :- integer(V), iszero(V).
  
 % (23)		<E | Env> => <V | Env>, V => 0
 % 		------------------------------------
 % 		<'while' E 'do' L 'od' | Env> => Env
 
-
+reduce(config(while(E,L),Env),Env) :-															% ?????
+	reduce(config(E,Env),config(V,Env)), iszero(V).
  
 % (24)						<E | Env> => <V| Env>, V > 0
 % 		-----------------------------------------------------------------
 % 		<'while' E 'do' L 'od' | Env> => <L; 'while' E 'do' L 'od' | Env>
 
+reduce(config(while(E,L),Env),config(seq(L,while(E,L)),Env)) :-									% ?????
+	reduce(config(E,Env),config(V,Env)), gtzero(V).
 
 % =============================================================================
 
