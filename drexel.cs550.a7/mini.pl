@@ -11,10 +11,10 @@
 %	reduce_all(config(times(plus(x,3),minus(5,y)),[value(x,2),value(y,1)]),V).
 %	V = config(20,[value(x,2),value(y,1)]) ? 
 %
-%	reduce_exp_all(config(plus(times(2,5),minus(2,5)),[]),V).
+%	reduce_all(config(plus(times(2,5),minus(2,5)),[]),V).
 %	V = config(7,[])
 %
-%	reduce_exp_all(config(plus(times(x,5),minus(2,y)),[value(x,2),value(y,5)]),V).
+%	reduce_all(config(plus(times(x,5),minus(2,y)),[value(x,2),value(y,5)]),V).
 %	V = config(7,[value(x,2),value(y,5)])
 %
 %	reduce_all(config(seq(assign(x,3),assign(y,4)),[]),Env).
@@ -132,7 +132,7 @@ reduce(config(I,Env),config(V,Env)) :- atom(I), lookup(Env,I,V).
 % (16)	<I ':=' V | Env> => Env & {I = V}
 
 reduce(config(assign(I,E),Env),Env1) :-
-	atom(I), reduce_value(config(E,Env),V), !, update(Env, value(I,V), Env1).
+	atom(I), reduce_value(config(E,Env),V), update(Env, value(I,V), Env1).
 
 % (17)		   <E | Env> => <E1 | Env> 
 % 		-------------------------------------
@@ -140,17 +140,6 @@ reduce(config(assign(I,E),Env),Env1) :-
 
 reduce(config(assign(I,E),Env),config(assign(I,E1),Env)) :-
 	reduce(config(E,Env),config(E1,Env)).
- 
-% (18)		  <S | Env> => Env1
-% 		-----------------------------
-% 		<S ';' L | Env> => <L | Env1> 
-
-reduce(config(seq(S,L),Env),config(L,Env1)) :-
-	reduce(config(S,Env),Env1), seq(L).
- 
-% (19)	L => <L | Env0>
-
-reduce(L,config(L,[])). %										 :- seq(L).						% ?????
  
 % (20)								<E | Env> => <E1| Env>
 % 		-----------------------------------------------------------------------------------
@@ -187,7 +176,16 @@ reduce(config(while(E,L),Env),Env) :-															% ?????
 reduce(config(while(E,L),Env),config(seq(L,while(E,L)),Env)) :-									% ?????
 	reduce_value(config(E,Env),V), gtzero(V).
 
+% (18)		  <S | Env> => Env1
+% 		-----------------------------
+% 		<S ';' L | Env> => <L | Env1> 
 
+reduce_all(config(seq(S,L),Env),config(L,Env1)) :- reduce_all(config(S,Env),Env1).
+ 
+% (19)	L => <L | Env0>
+
+reduce_all(config(L,[]),Env) :- reduce_all(L,Env).
+	
 % =============================================================================
 
 
