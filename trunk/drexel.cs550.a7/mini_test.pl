@@ -1,14 +1,14 @@
-=============================================================================
-Test cases:
-=============================================================================
+% ==============================================================================
+% Test cases:
+% ==============================================================================
 
-reduce_all(config(times(plus(x,3),minus(5,y)),[value(x,2),value(y,1)]),V).
+reduce_exp_all(config(times(plus(x,3),minus(5,y)),[value(x,2),value(y,1)]),V).
 % V = config(20,[value(x,2),value(y,1)]) ? 
 
-reduce_all(config(plus(times(2,5),minus(2,5)),[]),V).
+reduce_exp_all(config(plus(times(2,5),minus(2,5)),[]),V).
 % V = config(7,[])
 
-reduce_all(config(plus(times(x,5),minus(2,y)),[value(x,2),value(y,5)]),V).
+reduce_exp_all(config(plus(times(x,5),minus(2,y)),[value(x,2),value(y,5)]),V).
 % V = config(7,[value(x,2),value(y,5)])
 
 reduce_all(config(seq(assign(x,3),assign(y,4)),[]),Env).
