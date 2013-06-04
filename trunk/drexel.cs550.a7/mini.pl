@@ -56,14 +56,14 @@ reduce(config(if(E,L1,_),Env),Env1) :-
 	reduce_value(config(E,Env),V), V>0, reduce_all(config(L1,Env),Env1).
 
 reduce(config(if(E,_,L2),Env),Env1) :-
-	reduce_value(config(E,Env),V), V=:=0, reduce_all(config(L2,Env),Env1).
+	reduce_value(config(E,Env),V), V=<0, reduce_all(config(L2,Env),Env1).
 
 % while
 reduce(config(while(E,L),Env),Env2) :-
 	reduce_value(config(E,Env),V), V>0, reduce_all(config(L,Env),Env1), reduce(config(while(E,L),Env1),Env2).
 
 reduce(config(while(E,_),Env),Env) :-
-	reduce_value(config(E,Env),V), V=:=0.
+	reduce_value(config(E,Env),V), V=<0.
 
 % seq
 reduce_all(config(S,Env),Env1) :- reduce(config(S,Env),Env1), !.
