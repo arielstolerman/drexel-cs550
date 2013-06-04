@@ -39,34 +39,42 @@ reduce_value(config(E,Env),V) :- reduce_exp_all(config(E,Env),config(V,Env)).
 % ==============================================================================
 
 % Env update
+% ----------
+% base case
 update([],value(I,V),[value(I,V)]).
+% override binding
 update([value(I,_)|Env], value(I,V), [value(I,V)|Env]).
+% continue search
 update([value(J,V1)|Env], value(I,V2), [value(J,V1)|Env1]) :-
 	update(Env, value(I,V2), Env1).
 
 % assign
+% ------
 reduce(config(assign(I,E),Env),Env1) :-
 	atom(I), reduce_value(config(E,Env),V), update(Env, value(I,V), Env1).
 
-reduce(config(assign(I,E),Env),config(assign(I,E1),Env)) :-
-	reduce_exp(config(E,Env),config(E1,Env)).
-
 % if
+% --
+% then clause
 reduce(config(if(E,L1,_),Env),Env1) :-
 	reduce_value(config(E,Env),V), V>0, reduce_all(config(L1,Env),Env1).
-
+% else clause
 reduce(config(if(E,_,L2),Env),Env1) :-
 	reduce_value(config(E,Env),V), V=<0, reduce_all(config(L2,Env),Env1).
 
 % while
+% -----
+% continue to another iteration
 reduce(config(while(E,L),Env),Env2) :-
 	reduce_value(config(E,Env),V), V>0, reduce_all(config(L,Env),Env1), reduce(config(while(E,L),Env1),Env2).
-
+% stop while
 reduce(config(while(E,_),Env),Env) :-
 	reduce_value(config(E,Env),V), V=<0.
 
 % seq
+% base case
 reduce_all(config(S,Env),Env1) :- reduce(config(S,Env),Env1), !.
+% recursive case
 reduce_all(config(seq(S,L),Env),Env2) :-
 	reduce(config(S,Env),Env1), reduce_all(config(L,Env1),Env2).
 
