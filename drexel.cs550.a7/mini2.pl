@@ -52,29 +52,21 @@ reduce(config(assign(I,E),Env),config(assign(I,E1),Env)) :-
 	reduce_exp(config(E,Env),config(E1,Env)).
 
 % if
-reduce(config(if(E,L1,_),Env),config(L1,Env)) :-
-	reduce_value(config(E,Env),V), V>0, reduce_all(config(L1,Env),Env).
+reduce(config(if(E,L1,_),Env),Env1) :-
+	reduce_value(config(E,Env),V), V>0, reduce_all(config(L1,Env),Env1).
 
-reduce(config(if(E,_,L2),Env),config(L2,Env)) :-
-	reduce_value(config(E,Env),V), V=:=0, reduce_all(config(L2,Env),Env).
+reduce(config(if(E,_,L2),Env),Env1) :-
+	reduce_value(config(E,Env),V), V=:=0, reduce_all(config(L2,Env),Env1).
 
 % while
-reduce(config(while(E,L),Env),config(seq(L,while(E,L)),Env)) :-
-	reduce_value(config(E,Env),V), V>0.
+reduce(config(while(E,L),Env),Env2) :-
+	reduce_value(config(E,Env),V), V>0, reduce_all(config(L,Env),Env1), reduce(config(while(E,L),Env1),Env2).
 
 reduce(config(while(E,_),Env),Env) :-
 	reduce_value(config(E,Env),config(V,Env)), V=:=0.
 
 % seq
-%reduce_all(config(S,Env),Env1) :-
-%	reduce(config(if(E,L1,L2),Env),config(S,Env)), reduce_all(config(if(E,L1,L2),Env),Env1), !.
-%reduce_all(config(S,Env),Env1) :-
-%	reduce(config(while(E,L),Env),config(S,Env)), reduce_all(config(while(E,L),Env),Env1), !.
-%reduce_all(config(S,Env),Env1) :-
-%	reduce(config(assign(I,E),Env),config(S,Env)), reduce_all(config(assign(I,E),Env),Env1), !.
-
 reduce_all(config(S,Env),Env1) :- reduce(config(S,Env),Env1), !.
-
 reduce_all(config(seq(S,L),Env),Env2) :-
 	reduce(config(S,Env),Env1), reduce_all(config(L,Env1),Env2).
 
