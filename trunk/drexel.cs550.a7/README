@@ -9,3 +9,44 @@ Group 1:
 
 ### files ###
 
+> cs550_a7.pdf
+
+Answers to questions:
+- SICP 4.59
+- SICP 4.65
+- SICP 4.68
+- SICP 4.75
+
+> ch4-query.scm
+
+Original scheme code for the query questions, with extentions added for the
+answers (most at the bottom of the file; some added along the file as additions
+to existing functions).
+To run simple open scheme, load the file, initialize database and start the
+query driver loop:
+> scheme --load ch4-query.scm
+scheme> (initialize-data-base microshaft-data-base)
+scheme> (query-driver-loop)
+scheme> <call test cases>
+
+> reverse.pl
+To run simply open prolog and load the file:
+> prolog
+prolog> ['reverse.pl'].
+prolog> <call test cases>
+
+Prolog implementation for the reverse function in question SICP 4.68 (with some
+test cases).
+
+> mini.pl
+
+Prolog mini-language interpreter (answer to question 5).
+To run simply open prolog and load the file:
+> prolog
+prolog> ['mini.pl'].
+prolog> <call test cases>
+
+> mini_test.pl
+
+Test cases used to test the prolog mini-language interpreter (adopted from the
+lecture slides).
